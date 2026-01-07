@@ -1,0 +1,109 @@
+
+/* --- GENERAL TEXT STYLES --- */
+.text-shadow { text-shadow: 2px 2px 0px rgba(0,0,0,0.8); }
+.text-shadow-dark { text-shadow: 1px 1px 2px #000; }
+.text-shadow-glow-amber { text-shadow: 0 0 8px #f59e0b, 0 0 15px #78350f; }
+
+/* --- SCROLLBAR --- */
+.custom-scrollbar-hide::-webkit-scrollbar { display: none; }
+.custom-scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #44403c; border-radius: 2px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #57534e; }
+
+/* --- MENU PARTICLE SYSTEM --- */
+@keyframes ashFall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; } 20% { opacity: 0.6; } 80% { opacity: 0.4; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+.ash-particle { position: absolute; width: 6px; height: 6px; background: #57534e; filter: blur(2px); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); animation: ashFall linear infinite; }
+@keyframes emberRise { 0% { transform: translateY(105vh) scale(0.5) translateX(0); opacity: 0; } 20% { opacity: 0.8; } 50% { transform: translateY(50vh) scale(1.2) translateX(20px); } 80% { opacity: 0.4; } 100% { transform: translateY(-10vh) scale(0.2) translateX(-20px); opacity: 0; } }
+.ember-particle { position: absolute; width: 4px; height: 4px; background: radial-gradient(circle, #f97316 0%, #b91c1c 70%, transparent 100%); border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: emberRise ease-in infinite; }
+
+/* --- TACTICAL UI & ANIMATIONS --- */
+.bg-grid { background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 50px 50px; }
+@keyframes radarSweep { from { transform: translateX(-100%); } to { transform: translateX(200%); } }
+.radar-sweep { background: linear-gradient(90deg, transparent, rgba(185, 28, 28, 0.1), transparent); width: 20%; height: 100%; animation: radarSweep 8s infinite linear; }
+@keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-slide-down { animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+@keyframes fadeInFast { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.animate-fade-in-fast { animation: fadeInFast 0.3s cubic-bezier(0.2, 1, 0.3, 1) forwards; }
+@keyframes scanFast { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.animate-scan-fast { animation: scanFast 2.5s linear infinite; }
+@keyframes pulseSlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+.animate-pulse-slow { animation: pulseSlow 5s ease-in-out infinite; }
+@keyframes tooltipSlideUp { from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+.animate-tooltip-slide-up { animation: tooltipSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* --- COMMAND PANEL BUTTONS (MAIN MENU) --- */
+.menu-btn { position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 1.25rem 1.5rem; background: rgba(28, 25, 23, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid var(--btn-color); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); overflow: hidden; }
+.menu-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--btn-color), transparent); opacity: 0; transform: translateX(-100%); transition: all 0.5s ease-out; }
+.menu-btn:hover { background: rgba(41, 37, 36, 0.8); transform: translateX(8px); border-color: rgba(255, 255, 255, 0.2); box-shadow: -10px 10px 30px rgba(0,0,0,0.5); }
+.menu-btn:hover::before { opacity: 0.15; transform: translateX(0); }
+.menu-btn-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: flex-start; }
+.menu-btn .zh { font-size: 1.25rem; font-weight: 900; letter-spacing: 0.2em; color: #e5e5e5; transition: color 0.3s; }
+.menu-btn .en { font-size: 0.65rem; font-family: 'Courier Prime', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: #78716c; margin-top: 0.25rem; }
+.menu-btn-icon { position: relative; z-index: 10; font-size: 1.5rem; color: #44403c; transition: all 0.3s; }
+.menu-btn:hover .menu-btn-icon { color: var(--btn-color); transform: scale(1.2) rotate(10deg); }
+
+/* --- FACTION SELECTION PREMIUM REDESIGN --- */
+.faction-card { position: relative; cursor: pointer; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 4px; overflow: hidden; perspective: 2000px; }
+.faction-card-inner { position: relative; height: 100%; background: rgba(28, 25, 23, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.faction-card.blue-theme .faction-card-inner { border-top: 4px solid #1d4ed8; }
+.faction-card.red-theme .faction-card-inner { border-top: 4px solid #b91c1c; }
+.faction-card:hover { transform: translateY(-10px) scale(1.02); z-index: 50; }
+.faction-card:hover .faction-card-inner { background: rgba(35, 32, 30, 0.9); border-color: rgba(255, 255, 255, 0.15); box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+.faction-card.blue-theme:hover { box-shadow: 0 0 50px rgba(29, 78, 216, 0.2); }
+.faction-card.red-theme:hover { box-shadow: 0 0 50px rgba(185, 28, 28, 0.2); }
+.flag-ribbon { position: absolute; top: 0; right: 0; width: 120px; height: 120px; overflow: hidden; pointer-events: none; z-index: 20; opacity: 0.4; transition: opacity 0.5s ease; }
+.faction-card:hover .flag-ribbon { opacity: 1; }
+.flag-ribbon > svg { position: absolute; top: 15px; right: -30px; width: 140px; height: auto; transform: rotate(35deg); filter: sepia(0.3) contrast(1.2); }
+.faction-action-btn { position: relative; width: 100%; padding: 1rem; background: #1c1917; border: 1px solid rgba(255, 255, 255, 0.1); color: #d6d3d1; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.1em; overflow: hidden; transition: all 0.3s; }
+.blue-theme .faction-action-btn:hover { background: #1e3a8a; color: #fff; border-color: #3b82f6; }
+.red-theme .faction-action-btn:hover { background: #450a0a; color: #fff; border-color: #ef4444; }
+.btn-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(255, 255, 255, 0.1); transform: translateY(-100%); transition: transform 0.5s ease-out; }
+.faction-action-btn:hover .btn-scanline { animation: btn-scan 1s infinite linear; }
+@keyframes btn-scan { 0% { transform: translateY(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(40px); opacity: 0; } }
+@keyframes slide-in-bottom { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-in { animation: slide-in-bottom 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+
+/* --- MODALS & PANELS --- */
+.dossier-modal-container { background-color: #eaddcf; background-image: url('https://www.transparenttextures.com/patterns/old-paper.png'); border: 1px solid #5d4037; outline: 5px solid #2f1b14; color: #2f1b14; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+.stamp-button { border: 3px double #9f1239; color: #9f1239; background-color: rgba(212, 185, 150, 0.5); font-weight: 900; padding: 0.75rem 1.5rem; transform: rotate(-2deg); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* --- GAME UI --- */
+.instrument-panel { background: linear-gradient(#2a2a2a, #1a1a1a); border-bottom: 2px solid #000; height: 6rem; }
+.crt-text { color: #a3e635; text-shadow: 0 0 6px #a3e635; font-family: 'Courier Prime', monospace; }
+
+/* --- PAUSE MENU (WWII Style) --- */
+.pause-panel-ww2 { background-color: #3d403a; border: 4px solid #1a1a1a; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.7); border-radius: 4px; font-family: 'Courier Prime', monospace; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"); }
+.pause-btn-ww2 { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: linear-gradient(#5a5e56, #4a4d46); border: 1px solid #2a2c27; border-bottom: 3px solid #1a1a1a; color: #f5f5f5; font-weight: bold; text-shadow: 1px 1px 0 #000; transition: all 0.1s ease-out; border-radius: 2px; }
+.pause-btn-ww2:hover { background: linear-gradient(#6a6e66, #5a5d56); }
+.pause-btn-ww2:active { transform: translateY(2px); border-bottom-width: 1px; }
+.pause-btn-ww2.primary { background: linear-gradient(#3a5a3a, #2a4d26); color: #d4f5d4; }
+.pause-btn-ww2.primary:hover { background: linear-gradient(#4a6a4a, #3a5d36); }
+.pause-btn-ww2.danger { background: linear-gradient(#8a3a3a, #6d2a26); color: #f5d4d4; }
+.pause-btn-ww2.danger:hover { background: linear-gradient(#9a4a4a, #7d3a36); }
+
+/* --- WWII COMMAND DECK --- */
+.command-deck-ww2 { background: linear-gradient(to bottom, #4a4e46, #3d403a); border-top: 4px solid #1a1a1a; box-shadow: inset 0 5px 15px rgba(0,0,0,0.4), 0 -5px 20px rgba(0,0,0,0.6); height: 9rem; }
+.execute-button-ww2 { width: 7rem; height: 7rem; border-radius: 50%; background: #2a2c27; padding: 6px; box-shadow: 0 8px 0 #111, 0 12px 20px rgba(0,0,0,0.5); transition: all 0.1s ease-out; }
+.execute-button-ww2 .button-face { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(#b91c1c, #7f1d1d); border: 2px solid #fecaca; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: inset 0 0 10px rgba(0,0,0,0.7); }
+.execute-button-ww2:hover .button-face { background: linear-gradient(#dc2626, #991b1b); }
+.execute-button-ww2:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 #111, 0 6px 10px rgba(0,0,0,0.5); }
+.cp-display-ww2 { border-right: 2px solid #1a1a1a; box-shadow: 1px 0 0 #5a5e56; }
+.skill-container-ww2 { scrollbar-width: thin; scrollbar-color: #1a1a1a #5a5e56; }
+.skill-container-ww2::-webkit-scrollbar { height: 6px; }
+.skill-container-ww2::-webkit-scrollbar-track { background: #2a2c27; }
+.skill-container-ww2::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+.skill-key-ww2 { width: 7rem; height: 100%; border-radius: 4px; background: #2a2c27; padding: 4px; box-shadow: 0 4px 0 #111, 0 6px 10px rgba(0,0,0,0.4); transition: all 0.08s ease-out; }
+.skill-key-ww2 .skill-key-face { width: 100%; height: 100%; border-radius: 2px; background: linear-gradient(#5a5e56, #4a4d46); border: 1px solid #6a6e66; padding: 0.5rem; display: flex; flex-direction: column; justify-content: space-between; }
+.skill-key-ww2:hover .skill-key-face { background: linear-gradient(#6a6e66, #5a5d56); }
+.skill-key-ww2:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #111; }
+.skill-key-ww2:disabled { opacity: 0.5; filter: grayscale(1); }
+.toggle-switch-ww2 { position: relative; display: inline-block; width: 48px; height: 24px; }
+.toggle-switch-ww2 input { opacity: 0; width: 0; height: 0; }
+.toggle-switch-ww2 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3a; transition: .4s; border-radius: 24px; border: 1px solid #111; box-shadow: inset 0 0 5px #000; }
+.toggle-switch-ww2 .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 1px; bottom: 1px; background-color: #ccc; transition: .4s; border-radius: 50%; background: linear-gradient(#e0e0e0, #a0a0a0); }
+.toggle-switch-ww2 input:checked + .slider { background-color: #f59e0b; }
+.toggle-switch-ww2 input:checked + .slider:before { transform: translateX(24px); }

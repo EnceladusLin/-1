@@ -1,0 +1,602 @@
+
+@if (showIntro()) {
+  <app-intro (complete)="onIntroComplete()"></app-intro>
+} @else {
+  
+  <!-- === MAIN MENU REDESIGNED === -->
+  @if (game.gameMode() === 'MENU') {
+      <div class="fixed inset-0 z-[5000] bg-[#0c0a09] flex text-stone-300 select-none overflow-hidden font-serif">
+         
+         <!-- 1. CINEMATIC BACKGROUND LAYERS -->
+         <div class="absolute inset-0 z-[1] pointer-events-none">
+             <!-- Ash/Debris Layer (Falling) -->
+             <div class="absolute inset-0 opacity-20">
+                 @for (i of [1,2,3,4,5,6,7,8]; track i) {
+                     <div class="ash-particle" [style.left.%]="i * 12" [style.animation-delay]="i * 0.8 + 's'" [style.animation-duration]="15 + i + 's'"></div>
+                 }
+             </div>
+             
+             <!-- Embers Layer (Rising) -->
+             <div class="absolute inset-0 overflow-hidden">
+                 @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
+                    <div class="ember-particle" 
+                         [style.left.%]="(i * 9.5) + (i % 2 === 0 ? 2 : -2)" 
+                         [style.animation-delay]="i * 0.5 + 's'" 
+                         [style.animation-duration]="8 + (i % 3) + 's'"></div>
+                 }
+             </div>
+
+             <!-- Tactical Grid & Radar -->
+             <div class="absolute inset-0 bg-grid opacity-5"></div>
+             <div class="absolute inset-0 radar-sweep opacity-10"></div>
+             
+             <!-- Smog / Fog Layer -->
+             <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-60"></div>
+             <div class="absolute inset-0 bg-noise mix-blend-overlay opacity-10"></div>
+         </div>
+
+         <!-- 2. LEFT SIDE: TITLE & TACTICAL DATA -->
+         <div class="relative z-10 flex-1 flex flex-col justify-between p-12 lg:p-20">
+             <div class="animate-fade-in">
+                 <div class="flex items-center gap-4 mb-4 opacity-60">
+                     <span class="w-12 h-[1px] bg-red-800"></span>
+                     <span class="text-[10px] font-mono tracking-[0.5em] uppercase">Theatre: Songhu 1937</span>
+                 </div>
+                 
+                 <h1 class="text-7xl lg:text-9xl font-black tracking-tighter text-stone-100 font-calligraphy relative">
+                     <span class="text-red-700 drop-shadow-[0_0_25px_rgba(185,28,28,0.5)]">赤</span>色淞沪
+                     <div class="absolute -bottom-4 left-0 w-32 h-1 bg-red-900 shadow-lg"></div>
+                 </h1>
+                 
+                 <div class="mt-12 max-w-lg">
+                     <p class="text-lg text-stone-500 font-serif italic leading-relaxed opacity-80">
+                         “一寸山河一寸血，十万青年十万军。”<br>
+                         在这场血肉筑就的防线中，你将指挥中国军队在绝望的火力差距下，为民族存亡而战。
+                     </p>
+                 </div>
+             </div>
+
+             <!-- Floating Tactical Telemetry -->
+             <div class="mt-auto font-mono text-[9px] text-stone-600 space-y-1 opacity-40 animate-pulse-slow">
+                 <div>[SYS] LINK_ESTABLISHED: 88TH_DIVISION_HQ</div>
+                 <div>[LOC] SECTOR_ZHABEI: 31.2304° N, 121.4737° E</div>
+                 <div>[WTH] SUNNY // VISIBILITY: HIGH</div>
+                 <div>[LOG] RESUPPLY_STATUS: CRITICAL</div>
+             </div>
+         </div>
+
+         <!-- 3. RIGHT SIDE: COMMAND PANEL -->
+         <div class="relative z-20 w-full max-w-md bg-black/40 backdrop-blur-md border-l border-white/5 flex flex-col justify-center p-12 shadow-[ -50px_0_100px_rgba(0,0,0,0.8)]">
+             <div class="mb-12">
+                 <h2 class="text-xs font-mono font-bold text-stone-500 uppercase tracking-[0.3em] mb-2">Command Interface</h2>
+                 <div class="h-1 w-full bg-stone-800 relative overflow-hidden">
+                     <div class="absolute inset-y-0 left-0 bg-red-700 w-1/3 animate-scan-fast"></div>
+                 </div>
+             </div>
+
+             <nav class="flex flex-col gap-6">
+                <!-- Campaign -->
+                <button (click)="game.setGameMode('MISSION')"
+                        class="menu-btn group" style="--btn-color: #b91c1c;">
+                    <div class="menu-btn-content">
+                        <span class="zh">进入战场</span>
+                        <span class="en">Strategic Campaign</span>
+                    </div>
+                    <div class="menu-btn-icon">⚔</div>
+                </button>
+
+                <!-- Tutorial -->
+                <button (click)="game.setGameMode('TUTORIAL')" 
+                        class="menu-btn group" style="--btn-color: #eab308;">
+                    <div class="menu-btn-content">
+                        <span class="zh">训练演习</span>
+                        <span class="en">Tactical Training</span>
+                    </div>
+                    <div class="menu-btn-icon">◎</div>
+                </button>
+
+                <!-- Load -->
+                <button (click)="openSaveLoad('LOAD')"
+                        class="menu-btn group" style="--btn-color: #a8a29e;">
+                    <div class="menu-btn-content">
+                        <span class="zh">档案读取</span>
+                        <span class="en">Data Archive</span>
+                    </div>
+                    <div class="menu-btn-icon">📁</div>
+                </button>
+                
+                <!-- Achievements -->
+                 <button (click)="openAchievementModal()"
+                         class="menu-btn group" style="--btn-color: #a855f7;">
+                    <div class="menu-btn-content">
+                        <span class="zh">荣誉勋表</span>
+                        <span class="en">Service Record</span>
+                    </div>
+                    <div class="menu-btn-icon">★</div>
+                </button>
+
+                <!-- Exit -->
+                <button (click)="game.quitGame()" 
+                        class="menu-btn group mt-4" style="--btn-color: #450a0a;">
+                    <div class="menu-btn-content">
+                        <span class="zh text-stone-500">撤离指挥部</span>
+                        <span class="en opacity-50">Disconnect Terminal</span>
+                    </div>
+                    <div class="menu-btn-icon opacity-50">✕</div>
+                </button>
+             </nav>
+             
+             <div class="mt-20 flex justify-between items-end">
+                 <div class="text-[10px] font-mono text-stone-700">
+                     v0.9.7-BETA // HARDCORE_CORE
+                 </div>
+                 <div class="w-12 h-12 border-2 border-stone-800 flex items-center justify-center grayscale opacity-30">
+                     <span class="text-xs font-black">ROC</span>
+                 </div>
+             </div>
+         </div>
+      </div>
+  }
+
+  <!-- === FACTION SELECTION REDESIGNED === -->
+  @if (game.phase() === 'Setup' && (game.gameMode() === 'CLASSIC' || game.gameMode() === 'MISSION')) {
+      <div class="fixed inset-0 z-[4000] flex flex-col items-center justify-center font-serif animate-fade-in select-none bg-[#0a0a0a] overflow-hidden">
+        
+        <!-- Cinematic Background for Setup -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(185,28,28,0.05)_0%,transparent_100%)] z-0"></div>
+        <div class="absolute inset-0 bg-grid opacity-5 pointer-events-none z-0"></div>
+        
+        <div class="relative z-10 mb-12 text-center">
+            <h2 class="text-xs font-mono text-red-700 tracking-[0.8em] uppercase font-black mb-2 animate-pulse">Select Operational Allegiance</h2>
+            <h1 class="text-5xl text-stone-100 font-black tracking-widest font-calligraphy">选择阵营</h1>
+            <div class="h-[1px] w-64 bg-stone-800 mx-auto mt-6 relative">
+                <div class="absolute inset-0 bg-red-900 animate-scan-fast w-1/4"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-6xl px-12 z-10 items-stretch">
+            
+            <!-- BLUE FACTION CARD -->
+            <div (click)="selectFaction('Blue')" class="faction-card group blue-theme animate-slide-in" style="animation-delay: 0.1s;">
+                <div class="faction-card-inner">
+                    <!-- Flag Corner Ribbon -->
+                    <div class="flag-ribbon">
+                        <svg viewBox="0 0 450 300" class="w-full h-full shadow-lg">
+                            <rect width="450" height="300" fill="#FE0000"/>
+                            <rect width="225" height="150" fill="#000095"/>
+                            <circle cx="112.5" cy="75" r="37.5" fill="#FFF"/>
+                            <path d="M112.5,7.5 L121.5,33 L146.25,16.5 L138,45 L171,41.25 L151.5,64.5 L180,75 L151.5,85.5 L171,108.75 L138,105 L146.25,133.5 L121.5,117 L112.5,142.5 L103.5,117 L78.75,133.5 L87,105 L54,108.75 L73.5,85.5 L45,75 L73.5,64.5 L54,41.25 L87,45 L78.75,16.5 L103.5,33 Z" fill="#FFF"/>
+                        </svg>
+                    </div>
+
+                    <div class="p-8 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <div class="text-[10px] font-mono text-blue-400 tracking-[0.2em] uppercase font-bold mb-1">Defensive Operational Command</div>
+                                <h3 class="text-4xl font-black text-stone-100 font-calligraphy">国民革命军</h3>
+                                <div class="text-xs font-mono text-stone-500 mt-1">N.R.A. CENTRAL FORCES</div>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <div class="text-yellow-500 text-lg tracking-tighter">★★★★★</div>
+                                <div class="text-[9px] font-mono text-stone-500 uppercase mt-1">Difficulty: Extreme</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 flex-1">
+                            @for(stat of factionStats.Blue; track stat.name){
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-[10px] font-mono font-bold text-stone-400">
+                                        <span>{{stat.name}}</span>
+                                        <span class="text-blue-400">{{stat.value}}/10</span>
+                                    </div>
+                                    <div class="h-1 w-full bg-stone-900 overflow-hidden rounded-full">
+                                        <div class="h-full bg-gradient-to-r from-blue-900 to-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-1000 group-hover:w-[stat.value * 10%]" 
+                                             [style.width.%]="stat.value * 10"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-white/5">
+                            <div class="bg-black/40 p-4 border-l-2 border-blue-600 rounded-r-sm italic font-serif text-sm text-stone-400 leading-relaxed">
+                                "无论牺牲如何，必须尽量支持。我务求死里求生，并在死中求生。"
+                            </div>
+                            <div class="text-[9px] text-right text-stone-600 font-mono mt-2 uppercase tracking-widest">— Generalissimo Directives</div>
+                        </div>
+
+                        <button class="faction-action-btn mt-8">
+                            <span class="relative z-10">指挥国军 (ACCEPT COMMAND)</span>
+                            <div class="btn-scanline"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RED FACTION CARD -->
+            <div (click)="selectFaction('Red')" class="faction-card group red-theme animate-slide-in" style="animation-delay: 0.2s;">
+                <div class="faction-card-inner">
+                    <!-- Flag Corner Ribbon -->
+                    <div class="flag-ribbon">
+                        <svg viewBox="0 0 900 600" class="w-full h-full shadow-lg">
+                            <rect width="900" height="600" fill="#fff"/>
+                            <circle cx="450" cy="300" r="180" fill="#bc002d"/>
+                        </svg>
+                    </div>
+
+                    <div class="p-8 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <div class="text-[10px] font-mono text-red-500 tracking-[0.2em] uppercase font-bold mb-1">Invasion Task Force</div>
+                                <h3 class="text-4xl font-black text-stone-100 font-calligraphy">上海派遣軍</h3>
+                                <div class="text-xs font-mono text-stone-500 mt-1">I.J.A. EXPEDITIONARY FORCES</div>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <div class="text-yellow-500 text-lg tracking-tighter">★★★☆☆</div>
+                                <div class="text-[9px] font-mono text-stone-500 uppercase mt-1">Difficulty: Standard</div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 flex-1">
+                            @for(stat of factionStats.Red; track stat.name){
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-[10px] font-mono font-bold text-stone-400">
+                                        <span>{{stat.name}}</span>
+                                        <span class="text-red-500">{{stat.value}}/10</span>
+                                    </div>
+                                    <div class="h-1 w-full bg-stone-900 overflow-hidden rounded-full">
+                                        <div class="h-full bg-gradient-to-r from-red-950 to-red-600 shadow-[0_0_10px_rgba(239,68,68,0.5)] transition-all duration-1000 group-hover:w-[stat.value * 10%]" 
+                                             [style.width.%]="stat.value * 10"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-white/5">
+                            <div class="bg-black/40 p-4 border-l-2 border-red-700 rounded-r-sm italic font-serif text-sm text-stone-400 leading-relaxed">
+                                "依托绝对优势的舰炮与空中支援，粉碎抵抗。三天之内，占领上海。"
+                            </div>
+                            <div class="text-[9px] text-right text-stone-600 font-mono mt-2 uppercase tracking-widest">— Imperial General HQ</div>
+                        </div>
+
+                        <button class="faction-action-btn mt-8">
+                            <span class="relative z-10">指挥日军 (ACCEPT COMMAND)</span>
+                            <div class="btn-scanline"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button (click)="game.quitGame()" class="mt-16 text-stone-600 hover:text-stone-300 text-[10px] font-mono tracking-[0.4em] uppercase transition-all flex items-center gap-2 group">
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity">«</span>
+            ABORT MISSION SELECTION
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity">»</span>
+        </button>
+    </div>
+  }
+
+  @if (game.gameMode() !== 'MENU') {
+      <div class="h-screen w-screen flex flex-col relative bg-black text-[#f0e6d2] select-none overflow-hidden">
+        
+        <header class="instrument-panel flex items-center justify-between px-6 z-[500] shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col">
+                    <h1 class="text-3xl font-black text-[#b91c1c] font-calligraphy">赤色淞沪</h1>
+                    <div class="font-mono text-xs text-[#57534e] tracking-wider uppercase">Strategic Command</div>
+                </div>
+                <button (click)="game.togglePause()" class="panel-button group flex items-center gap-2 px-3 py-1">
+                    <span class="text-sm font-serif">MENU</span>
+                    <span class="text-[9px] font-mono text-[#999]">[ESC]</span>
+                </button>
+            </div>
+            
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6">
+                <div class="flex flex-col items-center">
+                    <div class="text-xs font-mono text-[#78716c] uppercase tracking-widest mb-1">Operation Time</div>
+                    <div class="text-2xl font-black crt-text tracking-tight leading-none">
+                        {{game.gameDateString()}}
+                    </div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="text-xs font-mono text-[#78716c] uppercase tracking-widest mb-1">Turn</div>
+                    <div class="odometer text-2xl font-black text-[#f0e6d2] font-mono tracking-tight leading-none">
+                        <span>{{game.turn().toString().padStart(3, '0')}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 text-xs font-mono">
+                <div class="flex flex-col text-right">
+                   <span class="text-orange-400">日军战损</span>
+                   <span class="odometer text-xl font-black text-white tabular-nums">{{ game.redCasualties() * 100 }}</span>
+                </div>
+                <div class="flex flex-col text-right">
+                   <span class="text-blue-400">国军战损</span>
+                   <span class="odometer text-xl font-black text-white tabular-nums">{{ game.blueCasualties() * 100 }}</span>
+                </div>
+                <div class="relative">
+                    <button (click)="showBuffList.set(!showBuffList())"
+                            class="panel-button h-10 px-4 flex items-center gap-2"
+                            [class.tutorial-highlight]="game.tutorialState().currentStep?.highlightUi === 'info-panel'">
+                        <span>{{game.activeBuffs().length}}</span>
+                        <span class="text-[10px] text-[#999] font-bold">效果</span>
+                    </button>
+                    @if (showBuffList() && game.activeBuffs().length > 0) {
+                        <div class="absolute top-full right-0 mt-2 w-80 bg-[#1c1917]/95 backdrop-blur-sm border border-[#44403c] rounded-sm shadow-2xl z-10 animate-fade-in-fast p-2">
+                            <div class="flex justify-between items-center p-2 border-b border-[#44403c]">
+                                <h3 class="text-sm font-bold uppercase tracking-widest text-white">战略效果</h3>
+                                <button (click)="showBuffList.set(false)" class="text-lg text-[#78716c] hover:text-white">&times;</button>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto custom-scrollbar space-y-2 p-2">
+                                @for (buff of game.activeBuffs(); track buff.sourceEvent) {
+                                    <div (click)="selectedBuff.set(buff)" 
+                                        class="bg-[#0c0a09] border border-[#44403c] p-2.5 relative group hover:bg-[#292524] transition-all rounded-sm text-left cursor-pointer">
+                                        <div class="flex justify-between items-center w-full mb-1">
+                                            <span class="text-xs font-bold text-white uppercase truncate pr-2">{{buff.title}}</span>
+                                            <span class="text-xs font-mono text-white font-bold bg-[#7f1d1d] px-1.5 rounded-sm">T-{{buff.expiryTurn - game.turn()}}</span>
+                                        </div>
+                                        <div class="text-[10px] text-[#a8a29e] leading-snug font-serif italic">{{buff.desc}}</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative">
+          <aside class="w-[300px] bg-[#141210]/90 backdrop-blur-sm border-r border-[#292524] flex flex-col z-[400] relative shrink-0 transition-[margin-left] duration-500 ease-in-out"
+                 [class.-ml-[300px]]="isPanelCollapsed()">
+             <button (click)="togglePanel()" 
+                class="absolute -right-6 top-1/2 -translate-y-1/2 z-[450] bg-[#141210] w-6 h-24 border-y-2 border-r-2 border-[#292524] rounded-r-lg hover:bg-[#292524] flex items-center justify-center text-[#78716c] hover:text-white focus:outline-none shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" [class.rotate-180]="isPanelCollapsed()">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+             </button>
+             <div class="absolute inset-0 bg-noise opacity-[0.03] pointer-events-none"></div>
+             <div class="flex-1 flex flex-col min-h-0">
+                <div class="px-4 py-2 text-[#a8a29e] text-[10px] font-bold uppercase tracking-widest border-b border-[#292524]">Combat Log</div>
+                <div #logContainer class="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-[11px] text-[#a8a29e] custom-scrollbar">
+                    @for (log of battleLogs(); track $index) {
+                       <div class="border-l-2 border-[#57534e] pl-2 leading-tight opacity-70 hover:opacity-100 transition-opacity">
+                           {{ log }}
+                       </div>
+                    }
+                </div>
+             </div>
+          </aside>
+          <main class="flex-1 relative bg-black">
+             <app-hex-grid></app-hex-grid>
+             <app-info-panel></app-info-panel>
+             <app-tutorial-overlay></app-tutorial-overlay>
+          </main>
+        </div>
+
+        @if (hoveredSkill(); as skill) {
+            @let state = getSkillState(skill);
+            <div class="absolute bottom-[9.5rem] left-1/2 -translate-x-1/2 z-[5500] w-[550px] pointer-events-none animate-tooltip-slide-up">
+                 <div class="relative bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#333] shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden rounded-sm"
+                      [class.border-cyan-500]="state.status === 'READY'"
+                      [class.shadow-cyan-900]="state.status === 'READY'"
+                      [class.border-red-900]="state.status === 'COOLDOWN'"
+                      [class.border-amber-500]="state.status === 'ACTIVE'"
+                      [class.border-stone-800]="state.status === 'DEPLETED'">
+                      <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px] pointer-events-none z-0"></div>
+                      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 z-0"></div>
+                      <div class="relative z-10 p-6 flex flex-col gap-4">
+                          <div class="flex justify-between items-start border-b border-white/10 pb-2">
+                              <div class="flex items-center gap-3">
+                                  <div class="w-2 h-2 rounded-full animate-pulse" 
+                                       [class.bg-cyan-400]="state.status === 'READY'"
+                                       [class.bg-red-600]="state.status === 'COOLDOWN'"
+                                       [class.bg-amber-400]="state.status === 'ACTIVE'"></div>
+                                  <div class="text-xs font-mono tracking-[0.2em] text-[#78716c] uppercase">
+                                      CMD_PROTOCOL // {{skill.id}}
+                                  </div>
+                              </div>
+                              <div class="text-xs font-bold font-mono px-2 py-0.5 rounded-sm bg-white/5 border border-white/10" [class]="state.colorClass">
+                                  {{ state.label }}
+                              </div>
+                          </div>
+                          <div class="flex justify-between items-start">
+                              <div>
+                                  <div class="text-[10px] text-cyan-500 font-mono tracking-widest mb-1">{{ getSkillTypeLabel(skill.type).toUpperCase() }}</div>
+                                  <h3 class="text-3xl font-black text-white tracking-wide">{{ skill.name }}</h3>
+                              </div>
+                              <div class="text-right">
+                                  <div class="text-4xl font-display font-bold leading-none tracking-tighter" 
+                                       [class.text-cyan-400]="game.commandPoints() >= skill.cost" 
+                                       [class.text-red-500]="game.commandPoints() < skill.cost">
+                                      {{ skill.cost }}
+                                  </div>
+                                  <div class="text-[9px] text-[#57534e] uppercase font-bold tracking-widest">CP COST</div>
+                              </div>
+                          </div>
+                          <div class="bg-black/40 border-l-2 p-3 font-serif text-sm leading-relaxed text-[#d6d3d1]"
+                               [class.border-cyan-700]="state.status === 'READY'"
+                               [class.border-red-900]="state.status === 'COOLDOWN'">
+                              <span class="text-cyan-600 font-bold mr-2">>></span>{{ skill.description }}
+                          </div>
+                      </div>
+                      <div class="absolute top-0 left-0 w-full h-1 bg-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-scan-fast pointer-events-none opacity-30"></div>
+                 </div>
+            </div>
+        }
+
+        <footer id="command-deck" class="command-deck-ww2 flex items-center z-[500]"
+                [class.tutorial-highlight]="game.tutorialState().currentStep?.highlightUi === 'command-deck'">
+            <!-- Execute Button -->
+            <div class="p-4 border-r border-black/20">
+                <button (click)="game.endPlayerTurn()" id="end-turn-btn"
+                        [disabled]="game.isUiLocked() || isTutorialActionDisallowed('END_TURN')"
+                        class="execute-button-ww2 group disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                        [class.tutorial-highlight]="game.tutorialState().currentStep?.highlightUi === 'end-turn-btn'">
+                    <div class="button-face">
+                        <span class="text-lg font-black uppercase tracking-wider text-shadow-dark">执行</span>
+                        <span class="text-xs text-amber-200/70 group-hover:text-amber-100 font-mono tracking-widest">END TURN</span>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- CP Gauge -->
+            <div class="cp-display-ww2 flex flex-col items-center justify-center p-4">
+                <div class="text-[9px] text-amber-100/50 font-mono uppercase tracking-widest">COMMAND POINTS</div>
+                <div class="text-6xl font-display text-amber-300 text-shadow-glow-amber">{{game.commandPoints()}}</div>
+            </div>
+        
+            <!-- Skill Bar -->
+            <div class="flex-1 flex items-center h-full relative px-2 overflow-hidden border-x border-black/20">
+               <div #skillContainer (wheel)="onSkillScroll($event)" class="skill-container-ww2 flex items-center gap-3 h-full py-4 w-full px-2">
+                   @for (skill of sortedSkills(); track skill.id) {
+                      @let state = getSkillState(skill);
+                      <button (click)="useSkill(skill)"
+                              (mouseenter)="hoveredSkill.set(skill)"
+                              (mouseleave)="hoveredSkill.set(null)"
+                              [disabled]="game.isUiLocked() || isTutorialActionDisallowed('SKILL') || (state.status !== 'READY' && state.status !== 'ACTIVE') || (skill.cost > game.commandPoints() && state.status === 'READY')"
+                              class="skill-key-ww2 group shrink-0">
+                         <div class="skill-key-face">
+                            <div class="flex justify-between items-start w-full">
+                               <span class="text-sm font-bold font-mono" 
+                                     [class.text-amber-300]="state.status === 'READY'"
+                                     [class.text-stone-600]="state.status !== 'READY'">
+                                   {{skill.cost}}
+                               </span>
+                               <span class="text-3xl font-display opacity-80 group-hover:opacity-100">{{ skill.icon }}</span>
+                            </div>
+                            <div class="text-[10px] font-bold text-amber-100/60 group-hover:text-amber-50 leading-tight text-center uppercase tracking-wide truncate w-full">
+                                {{skill.name}}
+                            </div>
+                         </div>
+                      </button>
+                   }
+               </div>
+            </div>
+            
+            <!-- Toggles -->
+            <div class="flex items-center gap-6 p-4 border-l border-black/20">
+               <div class="flex flex-col items-center">
+                  <label class="toggle-switch-ww2">
+                     <input type="checkbox" [checked]="game.isAutoPlay()" (change)="game.toggleAutoPlay()">
+                     <span class="slider"></span>
+                  </label>
+                  <span class="text-[10px] font-mono text-amber-100/50 mt-2 uppercase">AUTO</span>
+               </div>
+            </div>
+        </footer>
+      </div>
+  }
+}
+<!-- MODAL: AI ANALYSIS -->
+@if (showAiResultModal()) {
+    <div class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" (click)="closeAiModal()">
+        <div class="w-[600px] dossier-modal-container p-8" (click)="$event.stopPropagation()">
+            <div class="relative z-10 flex flex-col gap-4">
+                <div class="text-center space-y-2 relative w-full">
+                    <h2 class="text-3xl dossier-title tracking-[0.2em] font-calligraphy">
+                       {{ ai.analysisTitle() }}
+                    </h2>
+                </div>
+                <div class="w-full h-[1px] bg-[#9f1239]/50 my-2"></div>
+
+                @if (ai.isAnalyzing()) {
+                    <div class="flex flex-col items-center justify-center h-48 text-[#5d4037] font-mono">
+                        <div class="w-8 h-8 border-4 border-dashed border-[#5d4037] rounded-full animate-spin mb-4"></div>
+                        <p class="tracking-widest">{{ ai.analysisResult() }}</p>
+                    </div>
+                } @else {
+                    <div class="text-base text-[#2f1b14] leading-relaxed max-h-96 overflow-y-auto custom-scrollbar pr-2" [innerHTML]="ai.analysisResult()">
+                    </div>
+                }
+                <button (click)="closeAiModal()" class="stamp-button mt-4 !rotate-0 !text-sm !w-full">关闭通讯</button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- === PAUSE MENU REDESIGNED === -->
+@if (game.isPaused() && !game.gameResult() && !showManual() && game.gameMode() !== 'MENU' && !showSaveLoadModal()) {
+    <div class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" (click)="game.togglePause()">
+        <div class="pause-panel-ww2 w-[480px]" (click)="$event.stopPropagation()">
+            <!-- Panel Header -->
+            <div class="flex justify-between items-center px-6 py-3 border-b-2 border-black/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 bg-red-600 rounded-full animate-pulse border-2 border-black/50"></div>
+                    <h2 class="text-lg font-black text-amber-50 uppercase tracking-[0.2em] font-display">SYSTEM PAUSED</h2>
+                </div>
+                <div class="text-xs font-mono text-amber-100/50">COMM-INTERRUPT</div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8">
+                <div class="text-center mb-8">
+                    <h3 class="text-6xl font-black text-amber-50 font-calligraphy tracking-wider">战术暂停</h3>
+                    <div class="text-amber-100/60 font-mono mt-2 tracking-widest">TACTICAL PAUSE</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button (click)="game.togglePause()" class="pause-btn-ww2 col-span-2 primary">
+                        <span>▶</span> RESUME COMMAND // 恢复指挥
+                    </button>
+                    <button (click)="openSaveLoad('SAVE')" class="pause-btn-ww2">
+                        <span>💾</span> SAVE DATA // 保存
+                    </button>
+                    <button (click)="openSaveLoad('LOAD')" class="pause-btn-ww2">
+                        <span>📂</span> LOAD DATA // 读取
+                    </button>
+                    <button (click)="showManual.set(true)" class="pause-btn-ww2">
+                        <span>📖</span> FIELD MANUAL // 手册
+                    </button>
+                    <button (click)="game.quitGame()" class="pause-btn-ww2 danger">
+                        <span>⚠</span> SURRENDER // 放弃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL: BUFF DETAILS -->
+@if (selectedBuff(); as buff) {
+    <div class="fixed inset-0 z-[5500] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" (click)="selectedBuff.set(null)">
+        <div class="w-[500px] dossier-modal-container p-8" (click)="$event.stopPropagation()">
+            <div class="relative z-10 flex flex-col gap-4">
+                <div class="text-center space-y-2 relative w-full">
+                    <div class="absolute -top-2 right-0 font-mono text-sm border-2 border-[#9f1239] text-[#9f1239] px-2 py-1 transform rotate-6">
+                        T-{{ buff.expiryTurn - game.turn() }}
+                    </div>
+                    <h2 class="text-3xl dossier-title tracking-[0.2em]">
+                       {{ buff.title }}
+                    </h2>
+                     <p class="font-mono text-xs text-[#78350f] uppercase tracking-[0.3em] font-bold">
+                       战略效果 // STRATEGIC EFFECT
+                    </p>
+                </div>
+
+                <div class="mt-4 space-y-4 text-base text-[#2f1b14] leading-relaxed">
+                    <p>{{ buff.desc }}</p>
+                    @if (buff.internationalContext) {
+                        <div class="bg-black/5 p-3 border-l-4 border-[#5d4037]">
+                            <p class="text-sm italic">"{{buff.internationalContext}}"</p>
+                            <p class="text-xs text-right mt-1 opacity-70">- 国际观察</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="w-full h-[1px] bg-[#9f1239]/50 my-2"></div>
+                
+                <div>
+                    <h3 class="font-bold text-[#5d4037] mb-2 font-mono">具体修正:</h3>
+                    <div class="text-sm space-y-1 font-mono">
+                       @if(buff.blueBuffMultiplier?.combatStrength) { <div>国军战力: <span class="font-bold">x{{buff.blueBuffMultiplier.combatStrength}}</span></div> }
+                       @if(buff.blueBuff?.morale) { <div>国军士气: <span class="font-bold">+{{buff.blueBuff.morale}}</span></div> }
+                       @if(buff.data?.defenseBonus) { <div>防御加成 (罗店): <span class="font-bold">+{{buff.data.defenseBonus}}</span></div> }
+                       @if(buff.data?.defenseMultiplier) { <div>防御乘数: <span class="font-bold">x{{buff.data.defenseMultiplier}}</span></div> }
+                    </div>
+                </div>
+
+                <button (click)="selectedBuff.set(null)" class="stamp-button mt-4 !rotate-0 !text-sm !w-full">了解</button>
+            </div>
+        </div>
+    </div>
+}

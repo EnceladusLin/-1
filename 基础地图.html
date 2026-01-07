@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHANGHAI 1937: PREMIUM WARGAME</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 基础环境：深色高级灰/黑胡桃木风格 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #1e1e1e; }
+        
+        /* 材质纹理 - 模拟高级磨砂/布面沙盘 */
+        .texture-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            opacity: 0.15;
+            z-index: 5;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            mix-blend-mode: overlay;
+        }
+
+        /* 氛围暗角 - 增强沉浸感 */
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(0,0,0,0) 50%, rgba(10,10,12,0.6) 100%);
+            pointer-events: none;
+            z-index: 6;
+        }
+        
+        /* 状态水印 */
+        .status-mark {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            color: rgba(212, 196, 168, 0.4);
+            font-family: 'Courier New', 'SimSun', monospace;
+            font-weight: bold;
+            font-size: 13px;
+            letter-spacing: 1px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="texture-overlay"></div>
+    <div class="vignette"></div>
+    <div class="status-mark">THEATRE: SHANGHAI 1937 | HEX TERRAIN: RAILWAY & WATERWAYS ENHANCED</div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+/**
+ * SHANGHAI 1937: PREMIUM WARGAME EDITION
+ * 更新日志：
+ * 1. 铁路外观升级：绘制枕木和轨道，区分南北/东西走向，体现“运输功能”。
+ * 2. 水域外观升级：增加水波纹理，体现“流动与阻滞”。
+ */
+
+const GRID_W = 88;  
+const GRID_H = 87;  
+const HEX_SIZE = 18; 
+
+const REF_W = 400;
+const REF_H = 400;
+
+const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
+const HEX_HEIGHT = 2 * HEX_SIZE;
+const HEX_VERT_SPACING = HEX_HEIGHT * 0.75;
+
+// --- 高级深色兵推配色 (Premium Dark Palette) ---
+const PALETTE = {
+    BG: '#222222',           // 底色
+    WATER: '#1a2b3c',        // 水域底色
+    
+    // 区域
+    SETTLEMENT: '#546e7a',   
+    FRENCH: '#6d5e4f',       
+    JAPANESE: '#8c3b3b',     
+    ZHABEI: '#4e4239',       
+    OLD_CITY: '#8d6e63',     
+    
+    RURAL: '#334d38',        
+    
+    RAILWAY_BED: '#2c2c2c',  // 铁路路基色 (深灰)
+    ROAD: '#b0b0b0',         
+};
+
+const mapType = new Uint8Array(GRID_W * GRID_H);
+
+function noise(x, y) {
+    let n = x * 3711 + y * 6353;
+    n = (n << 13) ^ n;
+    return 1.0 - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0;
+}
+
+// --- 地图生成 ---
+function initMap() {
+    for (let r = 0; r < GRID_H; r++) { 
+        for (let q = 0; q < GRID_W; q++) { 
+            const idx = r * GRID_W + q;
+            let wx = q + (r % 2) * 0.5; 
+            let wy = r;
+            let vX = (wx / GRID_W) * REF_W;
+            let vY = (wy / GRID_H) * REF_H;
+
+            // 黄浦江几何
+            let riverX;
+            if (vY > 250) riverX = 190 + (vY-250)*0.2;
+            else if (vY > 180) { 
+                const t = (250 - vY) / 70;
+                riverX = 190 - Math.sin(t * Math.PI) * 15;
+            } else { 
+                const t = (180 - vY) / 180;
+                riverX = 190 + t * 200; 
+            }
+            riverX += Math.sin(vY * 0.05) * 3; 
+
+            let riverW = 9; 
+            if (vY > 170 && vY < 230) riverW = 14; 
+
+            let isRiver = false;
+            if (Math.abs(vX - riverX) < riverW) isRiver = true;
+
+            // 苏州河
+            const suzhouY = 195 + Math.sin((205-vX)/30)*10 + (205-vX)*0.1;
+            if (vX < riverX - riverW + 2 && Math.abs(vY - suzhouY) < 2.5) isRiver = true;
+
+            if (isRiver) {
+                mapType[idx] = 1; 
+                continue;
+            }
+
+            // 区域
+            if (vX > riverX) {
+                if (Math.abs(vX - riverX) < 25 && vY > 150 && vY < 250) mapType[idx] = 10; 
+                else mapType[idx] = 0; 
+                continue;
+            }
+
+            // 浦西
+            if (vY < suzhouY - 3) { 
+                if (vX > riverX - 50) mapType[idx] = 5; 
+                else if (vX > 180) mapType[idx] = 5; 
+                else mapType[idx] = 4; 
+            } else { 
+                if (vY < 225) mapType[idx] = 2; 
+                else if (vY < 255) mapType[idx] = 3; 
+                else {
+                    const dx = vX - 200;
+                    const dy = vY - 265;
+                    if (dx*dx + dy*dy < 600) mapType[idx] = 7; 
+                    else mapType[idx] = 9; 
+                }
+            }
+
+            // 铁路生成 (区分方向以便绘图)
+            // Type 21: 南北向铁路 (N-S)
+            if (Math.abs(vX - 165) < 1.5 && vY < 175) mapType[idx] = 21; 
+            // Type 22: 东西向铁路 (E-W) - 新增类型
+            if (vX < 165 && Math.abs(vY - (175 - (165-vX)*0.1)) < 1.5) mapType[idx] = 22; 
+        }
+    }
+}
+
+// --- 渲染系统 ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+let width, height;
+
+let camera = {
+    x: GRID_W / 2 * HEX_WIDTH,
+    y: GRID_H / 2 * HEX_VERT_SPACING,
+    zoom: 1.0,
+    min: 0.5,
+    max: 8.0
+};
+
+function hexToPixel(q, r) {
+    const x = (q + (r%2) * 0.5) * HEX_WIDTH;
+    const y = r * HEX_VERT_SPACING;
+    return { x, y };
+}
+
+function worldToScreen(wx, wy) {
+    return {
+        x: (wx - camera.x) * camera.zoom + width / 2,
+        y: (wy - camera.y) * camera.zoom + height / 2
+    };
+}
+
+function screenToWorld(sx, sy) {
+    return {
+        x: (sx - width / 2) / camera.zoom + camera.x,
+        y: (sy - height / 2) / camera.zoom + camera.y
+    };
+}
+
+function drawHexPath(ctx, x, y, size) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle_deg = 60 * i - 30;
+        const angle_rad = Math.PI / 180 * angle_deg;
+        const px = x + size * Math.cos(angle_rad);
+        const py = y + size * Math.sin(angle_rad);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
+
+// 绘制铁路细节 (枕木与轨道)
+function drawRailwayDetail(ctx, x, y, size, isVertical) {
+    ctx.save();
+    ctx.translate(x, y);
+    // 如果是东西向，旋转90度
+    if (!isVertical) ctx.rotate(Math.PI / 2);
+    
+    // 枕木参数
+    const sleeperWidth = size * 1.2; // 枕木宽
+    const sleeperHeight = size * 0.2; // 枕木高
+    const trackWidth = size * 0.15;   // 铁轨宽
+    const trackSpacing = size * 0.6;  // 铁轨间距
+
+    ctx.fillStyle = '#000000'; // 枕木颜色：纯黑
+    
+    // 画三根枕木
+    ctx.fillRect(-sleeperWidth/2, -size*0.7, sleeperWidth, sleeperHeight);
+    ctx.fillRect(-sleeperWidth/2, -sleeperHeight/2, sleeperWidth, sleeperHeight);
+    ctx.fillRect(-sleeperWidth/2, size*0.7 - sleeperHeight, sleeperWidth, sleeperHeight);
+
+    // 画两条铁轨 (纵向)
+    ctx.fillStyle = '#555555'; // 铁轨颜色：深灰铁色
+    ctx.fillRect(-trackSpacing/2 - trackWidth/2, -size, trackWidth, size*2);
+    ctx.fillRect(trackSpacing/2 - trackWidth/2, -size, trackWidth, size*2);
+
+    ctx.restore();
+}
+
+// 绘制水域细节 (波浪)
+function drawWaterDetail(ctx, x, y, size) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    // 简单的波浪线
+    ctx.moveTo(x - size*0.5, y - size*0.2);
+    ctx.lineTo(x + size*0.5, y - size*0.2);
+    
+    ctx.moveTo(x - size*0.3, y + size*0.2);
+    ctx.lineTo(x + size*0.7, y + size*0.2);
+    ctx.stroke();
+}
+
+function render() {
+    ctx.fillStyle = PALETTE.BG;
+    ctx.fillRect(0, 0, width, height);
+
+    const tl = screenToWorld(0, 0);
+    const br = screenToWorld(width, height);
+    
+    const startR = Math.max(0, Math.floor(tl.y / HEX_VERT_SPACING) - 1);
+    const endR = Math.min(GRID_H, Math.ceil(br.y / HEX_VERT_SPACING) + 1);
+    const startQ = Math.max(0, Math.floor(tl.x / HEX_WIDTH) - 2); 
+    const endQ = Math.min(GRID_W, Math.ceil(br.x / HEX_WIDTH) + 1);
+
+    const currentHexSize = HEX_SIZE * camera.zoom;
+    const drawBorder = currentHexSize > 5; 
+    const drawGap = currentHexSize > 3;
+
+    ctx.lineWidth = 1;
+
+    for (let r = startR; r < endR; r++) {
+        for (let q = startQ; q < endQ; q++) {
+            const idx = r * GRID_W + q;
+            const type = mapType[idx];
+            
+            const pixelPos = hexToPixel(q, r);
+            const screenPos = worldToScreen(pixelPos.x, pixelPos.y);
+            
+            let color = PALETTE.RURAL;
+            switch(type) {
+                case 1: color = PALETTE.WATER; break;
+                case 2: color = PALETTE.SETTLEMENT; break;
+                case 3: color = PALETTE.FRENCH; break;
+                case 4: color = PALETTE.ZHABEI; break;
+                case 5: color = PALETTE.JAPANESE; break;
+                case 7: color = PALETTE.OLD_CITY; break;
+                case 10: color = '#3e352f'; break; 
+                case 21: // 南北铁路
+                case 22: // 东西铁路
+                    color = PALETTE.RAILWAY_BED; break;
+            }
+            
+            if (currentHexSize < 3) {
+                ctx.fillStyle = color;
+                ctx.fillRect(screenPos.x, screenPos.y, currentHexSize, currentHexSize);
+            } else {
+                const drawRadius = drawGap ? currentHexSize * 0.94 : currentHexSize; 
+                drawHexPath(ctx, screenPos.x, screenPos.y, drawRadius);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                // 绘制特殊功能外观
+                if (type === 21) {
+                    drawRailwayDetail(ctx, screenPos.x, screenPos.y, currentHexSize, true); // 纵向
+                } else if (type === 22) {
+                    drawRailwayDetail(ctx, screenPos.x, screenPos.y, currentHexSize, false); // 横向
+                } else if (type === 1 && currentHexSize > 10) {
+                    drawWaterDetail(ctx, screenPos.x, screenPos.y, currentHexSize);
+                }
+
+                if (drawBorder) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; 
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    
+    renderLabels();
+}
+
+// --- 中文战术地标 ---
+const LANDMARKS = [
+    // 核心区域
+    { text: "公共租界", x: 155, y: 215, size: 24, color: '#b0bec5', font: "Microsoft YaHei", weight: "900", spacing: 3 },
+    { text: "法租界", x: 150, y: 240, size: 20, color: '#a1887f', font: "Microsoft YaHei", weight: "900", spacing: 3 },
+    { text: "闸北", x: 120, y: 150, size: 36, color: '#757575', font: "Microsoft YaHei", weight: "900", spacing: 5 },
+    { text: "虹口", x: 190, y: 150, size: 30, color: '#e57373', font: "Microsoft YaHei", weight: "900", spacing: 3 },
+    
+    // 北部战场
+    { text: "吴淞炮台", x: 340, y: 40, size: 18, bg: true, color: '#fff', bgColor: '#b71c1c' },
+    { text: "宝山", x: 300, y: 20, size: 20, color: '#ef5350', weight: "900" },
+    { text: "狮子林", x: 250, y: 15, size: 16, color: '#ef5350', weight: "bold" },
+    { text: "罗店 (血肉磨坊)", x: 50, y: 50, size: 22, bg: true, color: '#fff', bgColor: '#8a0000' },
+    { text: "刘行", x: 80, y: 80, size: 18, color: '#bdbdbd', weight: "bold" },
+    { text: "大场", x: 110, y: 100, size: 20, bg: true, color: '#000', bgColor: '#ffca28' },
+    { text: "江湾司令部", x: 200, y: 90, size: 18, color: '#ccc', weight: "bold" },
+    
+    // 西部与枢纽
+    { text: "南翔", x: 30, y: 130, size: 18, color: '#999', weight: "bold" },
+    { text: "真如车站", x: 80, y: 150, size: 16, bg: true, color: '#fff', bgColor: '#3e2723' },
+    
+    // 核心战术点
+    { text: "八字桥", x: 155, y: 155, size: 14, bg: true, color: '#fff', bgColor: '#d32f2f' },
+    { text: "北站", x: 155, y: 170, size: 16, bg: true, color: '#fff', bgColor: '#3e2723' },
+    { text: "日军司令部", x: 195, y: 145, size: 16, bg: true, color: '#fff', bgColor: '#b71c1c' },
+    { text: "外滩", x: 158, y: 205, size: 14, bg: true, color: '#000', bgColor: '#ffca28' },
+    { text: "汇山码头", x: 230, y: 120, size: 14, bg: true, color: '#fff', bgColor: '#b71c1c' },
+    { text: "四行仓库", x: 165, y: 188, size: 12, bg: true, color: '#fff', bgColor: '#424242' },
+    { text: "龙华", x: 130, y: 280, size: 18, color: '#888', weight: "bold" },
+    
+    // 大地标
+    { text: "浦 东", x: 300, y: 250, size: 60, color: 'rgba(255,255,255,0.05)', font: "Kaiti", weight: "900", spacing: 10 },
+    { text: "黄 浦 江", x: 200, y: 280, size: 40, color: 'rgba(255,255,255,0.1)', rotate: -0.2, font: "Kaiti", weight: "bold" },
+    { text: "长 江", x: 350, y: 10, size: 40, color: 'rgba(255,255,255,0.1)', font: "Kaiti", weight: "bold" },
+];
+
+function renderLabels() {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const scaleX = GRID_W / REF_W;
+    const scaleY = GRID_H / REF_H;
+
+    LANDMARKS.forEach(lm => {
+        const mappedX = lm.x * scaleX;
+        const mappedY = lm.y * scaleY;
+
+        const pix = hexToPixel(mappedX, mappedY);
+        const pos = worldToScreen(pix.x, pix.y);
+        
+        if (pos.x < -300 || pos.x > width+300 || pos.y < -300 || pos.y > height+300) return;
+        
+        const fontSize = lm.size * camera.zoom;
+        if (fontSize < 6) return; 
+
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        if (lm.rotate) ctx.rotate(lm.rotate);
+        
+        const fontName = lm.font || "SimHei"; 
+        const fontWeight = lm.weight || "bold";
+        
+        ctx.font = `${fontWeight} ${fontSize}px "${fontName}", sans-serif`;
+        
+        if (lm.spacing) ctx.letterSpacing = (lm.spacing * camera.zoom) + "px";
+
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4; 
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
+        if (lm.bg) {
+            const w = ctx.measureText(lm.text).width;
+            ctx.fillStyle = lm.bgColor || 'rgba(0,0,0,0.8)';
+            ctx.beginPath();
+            ctx.roundRect(-w/2-5, -fontSize/2-4, w+10, fontSize+8, 3);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.shadowBlur = 0; 
+        }
+
+        ctx.fillStyle = lm.color;
+        
+        if (!lm.bg && fontSize > 14) {
+             ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+             ctx.lineWidth = 3;
+             ctx.strokeText(lm.text, 0, 0);
+        }
+        
+        ctx.fillText(lm.text, 0, 0);
+        ctx.restore();
+    });
+}
+
+let isDragging = false;
+let lastMouse = {x:0, y:0};
+
+canvas.addEventListener('mousedown', e => { isDragging=true; lastMouse={x:e.clientX, y:e.clientY}; });
+window.addEventListener('mouseup', () => isDragging=false);
+window.addEventListener('mousemove', e => {
+    if(!isDragging) return;
+    const dx = e.clientX - lastMouse.x;
+    const dy = e.clientY - lastMouse.y;
+    camera.x -= dx / camera.zoom;
+    camera.y -= dy / camera.zoom;
+    lastMouse={x:e.clientX, y:e.clientY};
+    render();
+});
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const zoomFactor = 1.1;
+    const newZoom = e.deltaY < 0 ? camera.zoom * zoomFactor : camera.zoom / zoomFactor;
+    camera.zoom = Math.max(camera.min, Math.min(camera.max, newZoom));
+    render();
+}, {passive:false});
+window.addEventListener('resize', resize);
+
+function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    render();
+}
+
+initMap();
+resize();
+
+</script>
+</body>
+</html>

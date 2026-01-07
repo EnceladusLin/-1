@@ -1,0 +1,5 @@
+{
+  "name": "Red Strait: Tactical Core",
+  "description": "A hex-based hardcore wargame prototype featuring ZOC movement, terrain modifiers, and deterministic combat mechanics powered by Gemini analysis.",
+  "requestFramePermissions": []
+}
