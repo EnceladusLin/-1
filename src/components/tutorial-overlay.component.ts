@@ -31,7 +31,7 @@ import { GameService } from '../services/game.service';
           <div class="relative z-10 px-6 pt-5 pb-3 border-b border-[#1c1917] flex justify-between items-start">
              <div>
                 <div class="text-[9px] font-mono text-[#78716c] uppercase tracking-[0.15em] mb-1">
-                    Training // Sec {{ (game.tutorialState().stepIndex + 1).toString().padStart(2, '0') }}
+                    训练 // 第 {{ (game.tutorialState().stepIndex + 1).toString().padStart(2, '0') }} 节
                 </div>
                 <h3 class="text-xl font-black text-[#1c1917] leading-none font-typewriter">
                   {{ step.title }}
@@ -40,7 +40,7 @@ import { GameService } from '../services/game.service';
              
              <!-- Stamp -->
              <div class="border border-red-800 text-red-800 px-1 py-0.5 transform -rotate-12 opacity-80 text-[8px] font-black uppercase tracking-widest mt-1">
-                 Mandatory
+                 强制
              </div>
           </div>
           
@@ -63,10 +63,10 @@ import { GameService } from '../services/game.service';
              <div class="flex items-center gap-2 text-[10px] font-mono text-[#57534e]">
                  @if (step.waitForAction === 'ANY_KEY') {
                      <span class="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
-                     <span>WAITING CONFIRMATION</span>
+                     <span>等待确认</span>
                  } @else {
                      <span class="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse"></span>
-                     <span>WAITING FOR ACTION...</span>
+                     <span>等待操作...</span>
                  }
              </div>
 

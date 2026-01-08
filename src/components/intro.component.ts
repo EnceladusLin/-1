@@ -1,6 +1,7 @@
 
-import { Component, OnInit, Output, EventEmitter, HostListener, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, HostListener, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AudioService } from '../services/audio.service';
 
 type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
 
@@ -13,25 +14,14 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
          [class.ending]="isEnding()"
          (click)="handleClick()">
         
-        <!-- === CINEMATIC LAYERS (Solemn, not Scary) === -->
-        
-        <!-- 1. Film Grain (Old Documentary Style) -->
         <div class="absolute inset-0 z-[1] opacity-[0.1] bg-noise mix-blend-overlay pointer-events-none"></div>
-        
-        <!-- 2. Gentle Dust Motes instead of Flicker -->
         <div class="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:24px_24px] opacity-20 pointer-events-none"></div>
-
-        <!-- 3. Sepia/Desaturated Grading -->
         <div class="absolute inset-0 z-[3] bg-[#2f1b14] opacity-20 mix-blend-multiply pointer-events-none"></div>
 
-        <!-- === CONTENT LAYER === -->
         <div class="relative z-10 w-full h-full flex flex-col items-center justify-center p-8 md:p-16">
             
-            <!-- PHASE: NARRATIVE SEQUENCE -->
             @if (phase() === 'NARRATIVE') {
                 <div class="max-w-5xl w-full flex flex-col items-center text-center animate-fade-in-slow">
-                    
-                    <!-- Meta Stamp -->
                     <div class="mb-8 flex items-center gap-3 opacity-60">
                         <div class="h-[1px] w-12 bg-[#78716c]"></div>
                         <div class="font-mono text-xs tracking-[0.3em] text-[#a8a29e] uppercase">
@@ -40,14 +30,12 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
                         <div class="h-[1px] w-12 bg-[#78716c]"></div>
                     </div>
 
-                    <!-- Main Content -->
                     <div class="relative">
                         <div class="text-3xl md:text-5xl leading-tight font-bold tracking-widest text-[#e5e5e5] font-serif"
                              [innerHTML]="currentSlide()?.text">
                         </div>
                     </div>
 
-                    <!-- Subtext / Historical Note -->
                     @if (currentSlide()?.sub) {
                         <div class="mt-12 max-w-3xl text-lg md:text-2xl text-[#a1887f] font-serif italic leading-relaxed opacity-0 animate-fade-in-slow">
                             {{ currentSlide()?.sub }}
@@ -59,24 +47,18 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
                 </div>
             }
 
-            <!-- PHASE: TITLE REVEAL & ACTION -->
             @if (phase() === 'TITLE_REVEAL' || phase() === 'WAITING') {
                 <div class="flex flex-col items-center justify-center relative w-full h-full animate-fade-in-slow">
-                    
-                    <!-- Background Map Outline (Abstract) -->
                     <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none scale-125">
-                         <!-- Simplified map abstract -->
                          <div class="w-[600px] h-[600px] border border-[#5d4037] rounded-full opacity-20"></div>
                     </div>
 
-                    <!-- The Title Stack -->
                     <div class="relative z-20 flex flex-col items-center">
                         <div class="text-[#8d6e63] font-serif text-sm tracking-[1em] mb-4 opacity-0 animate-fade-in font-bold">
                             一九三七 · 八月十三日
                         </div>
 
                         <h1 class="font-calligraphy text-9xl md:text-[12rem] text-[#e5e5e5] leading-none font-black relative drop-shadow-xl">
-                            <!-- Removed flickering and jump scares. Just solemn fade in. -->
                             <span class="inline-block animate-fade-in text-[#9f1239]" style="animation-delay: 0.2s;">赤</span>
                             <span class="inline-block animate-fade-in text-[#d6d3d1]" style="animation-delay: 0.6s">色</span>
                             <span class="inline-block animate-fade-in text-[#d6d3d1]" style="animation-delay: 1.0s">淞</span>
@@ -85,7 +67,6 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
                         
                         <div class="h-[1px] w-64 bg-[#5d4037] mt-8 mb-6 opacity-0 animate-expand"></div>
                         
-                        <!-- THE REQUESTED PHRASE -->
                         <div class="flex flex-col items-center opacity-0 animate-fade-in" style="animation-delay: 2.0s;">
                             <div class="font-calligraphy text-4xl md:text-5xl text-[#7f1d1d] font-bold tracking-[0.2em] text-center">
                                 “一寸山河一寸血”
@@ -93,7 +74,6 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
                         </div>
                     </div>
 
-                    <!-- The Interaction Area (Click Anywhere) -->
                     @if (phase() === 'WAITING') {
                         <div class="mt-32 animate-fade-in" style="animation-delay: 2.5s">
                            <div class="text-center text-sm text-[#78716c] font-mono tracking-widest opacity-60">
@@ -105,7 +85,6 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
             }
         </div>
 
-        <!-- Footer: Loading Status -->
         <div class="absolute bottom-8 left-8 right-8 flex justify-between items-end font-mono text-[10px] text-[#57534e] z-20 pointer-events-none">
             <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
@@ -117,78 +96,39 @@ type IntroPhase = 'OPENING' | 'NARRATIVE' | 'TITLE_REVEAL' | 'WAITING';
                 </div>
             </div>
             
-            <!-- Date Stamp (Added as requested) -->
             <div class="flex flex-col items-end opacity-60">
                 <div class="text-4xl font-black font-mono text-[#5d4037] tracking-tighter leading-none opacity-80">
                     1937.08.13
                 </div>
                 <div class="text-[9px] uppercase tracking-[0.3em] text-[#5d4037] mt-1">
-                    Shanghai // 09:00 AM
+                    上海 // 上午 9:00
                 </div>
             </div>
         </div>
 
-        <!-- Outro Shutters -->
         <div class="outro-shutter top"></div>
         <div class="outro-shutter bottom"></div>
     </div>
   `,
   styles: [`
     :host { display: block; }
-    
     .font-kaiti { font-family: "KaiTi", "STKaiti", serif; }
-    
-    .bg-noise {
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
-    @keyframes fadeInSlow {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .bg-noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
+    @keyframes fadeInSlow { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in-slow { animation: fadeInSlow 2.5s ease-out forwards; }
     .animate-fade-in { animation: fadeInSlow 1.5s ease-out forwards; }
-
-    @keyframes expandWidth {
-        from { width: 0; opacity: 0; }
-        to { width: 16rem; opacity: 1; }
-    }
+    @keyframes expandWidth { from { width: 0; opacity: 0; } to { width: 16rem; opacity: 1; } }
     .animate-expand { animation: expandWidth 1.5s ease-out 1s forwards; }
-
-    /* Outro Animation */
-    .ending > *:not(.outro-shutter) {
-        transition: opacity 0.4s ease-in !important;
-        opacity: 0 !important;
-    }
-
-    .outro-shutter {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 50.5%; /* Overlap to prevent thin line */
-        background-color: #0c0a09;
-        z-index: 200;
-        transform: scaleY(0);
-        transition: transform 1s cubic-bezier(0.86, 0, 0.07, 1) 0.2s; /* Start after content fades */
-    }
-
-    .outro-shutter.top {
-        top: 0;
-        transform-origin: top;
-    }
-
-    .outro-shutter.bottom {
-        bottom: 0;
-        transform-origin: bottom;
-    }
-
-    .ending .outro-shutter {
-        transform: scaleY(1);
-    }
+    .ending > *:not(.outro-shutter) { transition: opacity 0.4s ease-in !important; opacity: 0 !important; }
+    .outro-shutter { position: absolute; left: 0; right: 0; height: 50.5%; background-color: #0c0a09; z-index: 200; transform: scaleY(0); transition: transform 1s cubic-bezier(0.86, 0, 0.07, 1) 0.2s; }
+    .outro-shutter.top { top: 0; transform-origin: top; }
+    .outro-shutter.bottom { bottom: 0; transform-origin: bottom; }
+    .ending .outro-shutter { transform: scaleY(1); }
   `]
 })
-export class IntroComponent implements OnInit {
+export class IntroComponent implements OnInit, OnDestroy {
   @Output() complete = new EventEmitter<void>();
+  private audio = inject(AudioService);
 
   phase = signal<IntroPhase>('OPENING');
   currentSlideIndex = signal(0);
@@ -201,7 +141,6 @@ export class IntroComponent implements OnInit {
   private narrativeTimer: ReturnType<typeof setTimeout> | null = null;
   private narrativePromiseResolver: (() => void) | null = null;
 
-  // Cinematic Script (Authentic Historical Quotes) - Less "Scary" styling
   private readonly script = [
       {
           meta: '1937年7月8日 / 延安',
@@ -254,60 +193,48 @@ export class IntroComponent implements OnInit {
       }
   ];
 
-  private readonly sysMessages = [
-      "正在解密第三战区绝密电文...",
-      "加载地形数据: 罗店 / 宝山 / 汇山码头...",
-      "部署单位: 德械第88师 / 税警总团...",
-      "校准日军第3舰队舰炮诸元...",
-      "同步历史天气数据: 8月13日 暴雨...",
-      "渲染战火特效 / 物理引擎预热...",
-      "连接南京最高统帅部...",
-      "系统就绪。等待指令。"
-  ];
-
   ngOnInit() {
     this.runSequence();
     this.simulateLoading();
   }
 
+  ngOnDestroy() {}
+
   private async runSequence() {
-      // 1. Initial Black
       await this.wait(1000);
       
-      // 2. Play Narrative
       this.phase.set('NARRATIVE');
       for (let i = 0; i < this.script.length; i++) {
           this.currentSlideIndex.set(i);
+          this.playTypewriterSoundForText(this.script[i].text);
           await this.cancellableWait(this.script[i].duration);
           if (this.phase() !== 'NARRATIVE') break;
       }
 
-      // 3. Title Reveal (only if not skipped)
       if (this.phase() === 'NARRATIVE') {
           this.phase.set('TITLE_REVEAL');
+          this.audio.playFlagAnthem(); // PLAY ANTHEM HERE
           await this.wait(3000); 
           this.phase.set('WAITING');
       }
   }
 
+  private playTypewriterSoundForText(htmlText: string) {
+      const plainText = htmlText.replace(/<[^>]*>/g, '');
+      const count = Math.min(20, plainText.length);
+      let i = 0;
+      const interval = setInterval(() => {
+          i++;
+          if (i >= count) clearInterval(interval);
+      }, 50);
+  }
+
   private simulateLoading() {
       const interval = setInterval(() => {
           const current = this.progress();
-          if (current >= 100) {
-              clearInterval(interval);
-              this.loadingText.set("系统就绪 // 等待指令");
-              return;
-          }
-          
-          // Randomized loading speed
+          if (current >= 100) { clearInterval(interval); this.loadingText.set("系统就绪。等待指令。"); return; }
           const increment = Math.random() > 0.6 ? Math.floor(Math.random() * 4) + 1 : 0;
           this.progress.set(Math.min(100, current + increment));
-
-          // Message updates
-          if (current % 12 === 0 && current < 95) {
-              const msg = this.sysMessages[Math.floor(Math.random() * this.sysMessages.length)];
-              this.loadingText.set(msg);
-          }
       }, 60);
   }
 
@@ -317,16 +244,15 @@ export class IntroComponent implements OnInit {
     return new Promise(resolve => {
         this.narrativePromiseResolver = resolve;
         this.narrativeTimer = setTimeout(() => {
-            if (this.narrativePromiseResolver) {
-                this.narrativePromiseResolver();
-            }
-            this.narrativeTimer = null;
-            this.narrativePromiseResolver = null;
+            if (this.narrativePromiseResolver) { this.narrativePromiseResolver(); }
+            this.narrativeTimer = null; this.narrativePromiseResolver = null;
         }, ms);
     });
   }
 
   handleClick() {
+      this.audio.init();
+
       if (this.phase() === 'NARRATIVE') {
           if (this.narrativeTimer && this.narrativePromiseResolver) {
               clearTimeout(this.narrativeTimer);
@@ -341,14 +267,14 @@ export class IntroComponent implements OnInit {
 
   @HostListener('window:keydown.enter')
   async finishIntro() {
+    this.audio.init();
     if (this.phase() === 'WAITING') {
         if (this.isEnding()) return;
+        this.audio.playSfx('MUFFLED_CANNON'); // MUFFLED_CANNON on start
         this.isEnding.set(true);
-        // Fade out buffer
         await this.wait(1500);
         this.complete.emit();
     } else {
-        // Skip mechanism for narrative
         if (this.narrativeTimer && this.narrativePromiseResolver) {
             clearTimeout(this.narrativeTimer);
             this.narrativePromiseResolver();
@@ -357,6 +283,7 @@ export class IntroComponent implements OnInit {
         }
         this.progress.set(100);
         this.phase.set('WAITING');
+        this.audio.playFlagAnthem(); // Ensure it plays if skipped
     }
   }
 }

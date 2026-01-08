@@ -11,6 +11,10 @@
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #44403c; border-radius: 2px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #57534e; }
+.custom-scrollbar-paper::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar-paper::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+.custom-scrollbar-paper::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 3px; }
+.custom-scrollbar-paper::-webkit-scrollbar-thumb:hover { background: #78716c; }
 
 /* --- MENU PARTICLE SYSTEM --- */
 @keyframes ashFall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; } 20% { opacity: 0.6; } 80% { opacity: 0.4; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
@@ -26,6 +30,8 @@
 .animate-slide-down { animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+@keyframes fadeInSlow { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in-slow { animation: fadeInSlow 2.5s ease-out forwards; }
 @keyframes fadeInFast { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 .animate-fade-in-fast { animation: fadeInFast 0.3s cubic-bezier(0.2, 1, 0.3, 1) forwards; }
 @keyframes scanFast { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
@@ -34,6 +40,38 @@
 .animate-pulse-slow { animation: pulseSlow 5s ease-in-out infinite; }
 @keyframes tooltipSlideUp { from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
 .animate-tooltip-slide-up { animation: tooltipSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.animate-scale-in { animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* --- TUTORIAL SPOTLIGHT SYSTEM --- */
+.tutorial-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 2000;
+    transition: opacity 0.5s ease;
+    backdrop-filter: blur(2px);
+    cursor: not-allowed;
+}
+
+@keyframes spotlightBreath {
+    0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.2); border-color: #fbbf24; }
+    50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.1), 0 0 30px rgba(251, 191, 36, 0.4); border-color: #f59e0b; }
+    100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4), 0 0 20px rgba(251, 191, 36, 0.2); border-color: #fbbf24; }
+}
+
+.tutorial-spotlight {
+    position: relative;
+    z-index: 2001 !important; /* Above backdrop */
+    animation: spotlightBreath 2s infinite ease-in-out;
+    border: 2px solid #fbbf24 !important;
+    background-color: rgba(0,0,0,0.2); /* Slight tint to make text pop */
+    pointer-events: auto !important;
+    transition: all 0.3s ease;
+}
+
+/* Specific shape fixes for rounded elements */
+.execute-button-ww2.tutorial-spotlight { border-radius: 50%; }
 
 /* --- COMMAND PANEL BUTTONS (MAIN MENU) --- */
 .menu-btn { position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 1.25rem 1.5rem; background: rgba(28, 25, 23, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid var(--btn-color); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); overflow: hidden; }
@@ -72,8 +110,9 @@
 .stamp-button { border: 3px double #9f1239; color: #9f1239; background-color: rgba(212, 185, 150, 0.5); font-weight: 900; padding: 0.75rem 1.5rem; transform: rotate(-2deg); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
 /* --- GAME UI --- */
-.instrument-panel { background: linear-gradient(#2a2a2a, #1a1a1a); border-bottom: 2px solid #000; height: 6rem; }
-.crt-text { color: #a3e635; text-shadow: 0 0 6px #a3e635; font-family: 'Courier Prime', monospace; }
+.panel-button { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; color: #a8a29e; transition: all 0.2s; }
+.panel-button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.crt-text { color: #a3e635; text-shadow: 0 0 8px #a3e635, 0 0 12px #4d7c0f; font-family: 'Courier Prime', monospace; }
 
 /* --- PAUSE MENU (WWII Style) --- */
 .pause-panel-ww2 { background-color: #3d403a; border: 4px solid #1a1a1a; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.7); border-radius: 4px; font-family: 'Courier Prime', monospace; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"); }
@@ -92,10 +131,9 @@
 .execute-button-ww2:hover .button-face { background: linear-gradient(#dc2626, #991b1b); }
 .execute-button-ww2:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 #111, 0 6px 10px rgba(0,0,0,0.5); }
 .cp-display-ww2 { border-right: 2px solid #1a1a1a; box-shadow: 1px 0 0 #5a5e56; }
-.skill-container-ww2 { scrollbar-width: thin; scrollbar-color: #1a1a1a #5a5e56; }
-.skill-container-ww2::-webkit-scrollbar { height: 6px; }
-.skill-container-ww2::-webkit-scrollbar-track { background: #2a2c27; }
-.skill-container-ww2::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+.skill-container-ww2 { scrollbar-width: none; }
+.skill-container-ww2::-webkit-scrollbar { display: none; }
+.scroll-indicator { position: absolute; top: 50%; transform: translateY(-50%); font-size: 2rem; color: rgba(255,255,255,0.3); pointer-events: none; opacity: 0; transition: opacity 0.3s; }
 .skill-key-ww2 { width: 7rem; height: 100%; border-radius: 4px; background: #2a2c27; padding: 4px; box-shadow: 0 4px 0 #111, 0 6px 10px rgba(0,0,0,0.4); transition: all 0.08s ease-out; }
 .skill-key-ww2 .skill-key-face { width: 100%; height: 100%; border-radius: 2px; background: linear-gradient(#5a5e56, #4a4d46); border: 1px solid #6a6e66; padding: 0.5rem; display: flex; flex-direction: column; justify-content: space-between; }
 .skill-key-ww2:hover .skill-key-face { background: linear-gradient(#6a6e66, #5a5d56); }
@@ -107,3 +145,143 @@
 .toggle-switch-ww2 .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 1px; bottom: 1px; background-color: #ccc; transition: .4s; border-radius: 50%; background: linear-gradient(#e0e0e0, #a0a0a0); }
 .toggle-switch-ww2 input:checked + .slider { background-color: #f59e0b; }
 .toggle-switch-ww2 input:checked + .slider:before { transform: translateX(24px); }
+
+/* --- SAVE/LOAD MODAL --- */
+.saveload-panel-ww2 { background-color: #3d403a; border: 4px solid #1a1a1a; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.7); border-radius: 4px; font-family: 'Courier Prime', monospace; }
+.saveload-slot { width: 100%; padding: 0.75rem; border: 2px solid #2a2c27; background: #1a1a1a; color: #amber-100/80; transition: all 0.2s; }
+.saveload-slot:not(:disabled):hover { background: #2a2c27; border-color: #4a4d46; }
+.saveload-slot.selected { border-color: #f59e0b; background: #422006; }
+.saveload-slot:disabled { opacity: 0.5; cursor: not-allowed; }
+.saveload-input { width: 100%; background: #1a1a1a; border: 1px solid #5a5e56; padding: 0.5rem; color: #f5f5f5; font-family: 'Courier Prime', monospace; }
+.saveload-btn-ww2 { padding: 0.75rem; background: linear-gradient(#5a5e56, #4a4d46); border: 1px solid #2a2c27; border-bottom: 3px solid #1a1a1a; color: #f5f5f5; font-weight: bold; text-shadow: 1px 1px 0 #000; transition: all 0.1s ease-out; }
+.saveload-btn-ww2:hover:not(:disabled) { background: linear-gradient(#6a6e66, #5a5d56); }
+.saveload-btn-ww2:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 1px; }
+.saveload-btn-ww2.primary { background: linear-gradient(#3a5a3a, #2a4d26); }
+.saveload-btn-ww2.primary:hover:not(:disabled) { background: linear-gradient(#4a6a4a, #3a5d36); }
+.saveload-btn-ww2.danger { background: linear-gradient(#8a3a3a, #6d2a26); }
+.saveload-btn-ww2.danger:hover:not(:disabled) { background: linear-gradient(#9a4a4a, #7d3a36); }
+.saveload-btn-ww2:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- ACHIEVEMENT MODAL (MEDAL CASE REDESIGN V2) --- */
+.service-record-case {
+    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'), linear-gradient(to bottom right, #3a2a1a, #2a1a0a);
+    background-color: #3a2a1a;
+    border: 8px solid #1a120a;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.7), 0 10px 40px rgba(0,0,0,0.8);
+    color: #f5e5d3;
+}
+.record-sidebar {
+    background-color: rgba(0,0,0,0.2);
+    border-right: 2px solid #1a120a;
+    box-shadow: inset -5px 0 15px rgba(0,0,0,0.5);
+}
+.rarity-plaque {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid transparent;
+    border-image: linear-gradient(to right, #4a3a2a, #2a1a0a) 1;
+    background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+    color: #d5c5b3;
+    transition: all 0.2s;
+    font-family: 'Courier Prime', monospace;
+}
+.rarity-plaque:hover {
+    background: linear-gradient(to right, rgba(251, 191, 36, 0.05), rgba(251, 191, 36, 0.15));
+    color: #fbbf24;
+}
+.rarity-plaque.active {
+    background: linear-gradient(to right, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.2));
+    border-image: linear-gradient(to right, #fbbf24, #b45309) 1;
+    color: #fbbf24;
+}
+.plaque-gem {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    box-shadow: 0 0 5px var(--rarity-color, #fff);
+}
+.medal-board {
+    background-image: url('https://www.transparenttextures.com/patterns/fabric-of-squares.png'), linear-gradient(to bottom right, #5a0a0a, #4a0000);
+    background-color: #5a0a0a;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+.medal-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: transform 0.2s ease-out;
+}
+.medal-container:hover {
+    transform: translateY(-5px);
+}
+.medal-cell {
+    aspect-ratio: 1/1;
+    width: 80px;
+    position: relative;
+    perspective: 800px;
+}
+.medal-cell.large { width: 100px; }
+.medal-cell .medal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    font-size: 2.5rem;
+    background: radial-gradient(#4a4a4a, #2a2a2a);
+    color: #1a1a1a;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+    box-shadow: inset 0 0 5px #000;
+    transition: all 0.3s;
+}
+.medal-cell.large .medal-icon { font-size: 4rem; }
+.medal-cell.unlocked .medal-icon {
+    background: radial-gradient(circle, #f5f5f5, #a5a5a5);
+    color: #1a1a1a;
+    box-shadow: inset 0 2px 3px rgba(255,255,255,0.5), 0 5px 10px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 1px #fff;
+}
+.medal-cell.unlocked .medal-icon::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 36px;
+    background-color: var(--rarity-color);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%);
+    z-index: -1;
+}
+.medal-cell.large.unlocked .medal-icon::after {
+    width: 36px;
+    height: 54px;
+    top: -15px;
+}
+.medal-container.selected .medal-title, .medal-container:hover .medal-title {
+    color: #fbbf24;
+    font-weight: bold;
+}
+.medal-container .unlocked + .medal-title {
+    color: #d5c5b3;
+}
+.citation-panel {
+    background: #f5e6d3;
+    background-image: url('https://www.transparenttextures.com/patterns/old-paper.png');
+}
+
+.achievement-toast {
+    background: linear-gradient(to right, #1a1a1a, #2a2c27);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 5px 20px rgba(245, 158, 11, 0.3);
+    animation: toast-in-out 4s ease-in-out forwards;
+}
+@keyframes toast-in-out {
+  0%, 100% { opacity: 0; transform: translateX(100%); }
+  10%, 90% { opacity: 1; transform: translateX(0); }
+}

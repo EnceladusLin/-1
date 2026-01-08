@@ -11,7 +11,8 @@ import { Unit } from '../types';
   template: `
     <div class="fixed top-24 right-8 bottom-36 w-[400px] z-[100] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] perspective-1000"
          [class.translate-x-[120%]]="shouldHide()"
-         [class.opacity-0]="shouldHide()">
+         [class.opacity-0]="shouldHide()"
+         [class.tutorial-spotlight]="game.tutorialState().currentStep?.highlightUi === 'info-panel'">
          
       <!-- === THE DOSSIER CARD === -->
       <div class="relative w-full h-full flex flex-col bg-[#f3f0eb] rounded-md shadow-2xl overflow-hidden font-serif border-4 border-[#d6d3d1] transform rotate-1 hover:rotate-0 transition-transform duration-300">
@@ -73,20 +74,20 @@ import { Unit } from '../types';
                     <div>
                         <div class="flex justify-between items-start pr-16"> 
                             <span class="text-[10px] font-mono font-bold text-[#78716c] tracking-widest uppercase border border-[#78716c] px-1 rounded-sm">
-                                SERIAL: {{u.id.substring(0,6)}}
+                                编号: {{u.id.substring(0,6)}}
                             </span>
                         </div>
                         
                         <h1 class="text-2xl font-black text-[#1c1917] leading-none mt-3 font-serif tracking-tight truncate pr-4">
                             {{ u.name }}
                         </h1>
-                        <div class="text-xs font-bold text-[#57534e] mt-0.5">{{u.category}} UNIT</div>
+                        <div class="text-xs font-bold text-[#57534e] mt-0.5">{{u.category}} 单位</div>
                     </div>
 
                     <div class="flex items-center gap-2 mt-1">
                         <span class="h-2 w-2 rounded-full" [class.bg-blue-600]="u.owner === 'Blue'" [class.bg-red-600]="u.owner === 'Red'"></span>
                         <span class="text-[10px] font-mono text-[#444] uppercase tracking-wider">
-                            {{u.owner === 'Blue' ? 'NATIONAL REVOLUTIONARY ARMY' : 'IMPERIAL JAPANESE FORCES'}}
+                            {{u.owner === 'Blue' ? '国民革命军' : '大日本帝国军队'}}
                         </span>
                     </div>
                 </div>
@@ -95,12 +96,26 @@ import { Unit } from '../types';
             <!-- === 2. MIDDLE: COMBAT METRICS & EVALUATION === -->
             <div class="relative z-10 p-5 space-y-4 bg-[#f3f0eb] shrink-0 border-b border-[#d6d3d1]">
                 
+                <!-- REGION CONTROL STATUS (NEW) -->
+                @let rid = getRegionId(u);
+                @let owner = game.getRegionOwner(rid);
+                <div class="flex items-center justify-between text-xs border border-[#a8a29e] bg-[#e7e5e4] px-2 py-1 rounded-sm">
+                    <span class="font-bold text-[#5d4037] uppercase tracking-wide">区域控制: {{ rid }}</span>
+                    @if (owner === 'Blue') {
+                        <span class="text-blue-700 font-bold flex items-center gap-1"><span class="w-2 h-2 bg-blue-600 rounded-full"></span>国军控制</span>
+                    } @else if (owner === 'Red') {
+                        <span class="text-red-700 font-bold flex items-center gap-1"><span class="w-2 h-2 bg-red-600 rounded-full"></span>日军控制</span>
+                    } @else {
+                        <span class="text-stone-500 font-bold">争夺中 / 中立</span>
+                    }
+                </div>
+
                 <!-- METRICS GRID -->
                 <div class="grid grid-cols-2 gap-3">
                     <!-- Strength/Casualties -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-[9px] font-bold uppercase text-[#57534e]">
-                            <span>Strength</span>
+                            <span>战力</span>
                             <span [class]="getHpColor(u)">{{u.hp}}/{{u.maxHp}}</span>
                         </div>
                         <div class="h-2 w-full bg-[#d6d3d1] flex gap-[1px]">
@@ -114,7 +129,7 @@ import { Unit } from '../types';
                     <!-- Morale -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-[9px] font-bold uppercase text-[#57534e]">
-                            <span>Morale</span>
+                            <span>士气</span>
                             <span>{{u.morale}}%</span>
                         </div>
                         <div class="h-2 w-full bg-[#d6d3d1]">
@@ -126,7 +141,7 @@ import { Unit } from '../types';
                 <!-- HARD STATS TABLE -->
                 <div class="border border-[#78716c] bg-[#e7e5e4] text-[10px]">
                     <div class="grid grid-cols-4 bg-[#d6d3d1] border-b border-[#78716c] font-bold text-[#1c1917] py-1 text-center font-mono">
-                        <div>SOFT</div><div>HARD</div><div>PEN</div><div>ARM</div>
+                        <div>软攻</div><div>硬攻</div><div>穿深</div><div>装甲</div>
                     </div>
                     <div class="grid grid-cols-4 font-mono text-[#292524] divide-x divide-[#78716c] text-center py-1 font-bold text-xs">
                         <div>{{u.softAttack}}</div>
@@ -143,7 +158,7 @@ import { Unit } from '../types';
                 @if (u.historicalNote) {
                     <div class="text-sm leading-relaxed font-serif text-[#292524] text-justify opacity-90 mb-4">
                         <div class="mb-2 text-[10px] font-mono text-[#78716c] uppercase tracking-widest border-b border-dashed border-[#a8a29e] pb-1">
-                            Unit Background // 部队档案
+                            部队档案
                         </div>
                         <div [innerHTML]="u.historicalNote"></div>
                     </div>
@@ -152,7 +167,7 @@ import { Unit } from '../types';
                 <!-- TACTICAL EVALUATION -->
                 <div class="text-xs leading-relaxed font-serif text-[#292524] text-justify opacity-90 mb-4 bg-[#e7e5e4] p-3 border border-[#a8a29e]">
                     <div class="mb-2 text-[10px] font-mono text-[#78716c] uppercase tracking-widest border-b border-dashed border-[#a8a29e] pb-1">
-                        Tactical Evaluation // 战术评估
+                        战术评估
                     </div>
                     <div [innerHTML]="getDetailedEvaluation(u)"></div>
                 </div>
@@ -160,7 +175,7 @@ import { Unit } from '../types';
                 <!-- CASUALTY REPORT -->
                 <div class="text-xs leading-relaxed font-serif text-[#7f1d1d] text-justify opacity-90 mb-4 border-l-4 border-[#7f1d1d] pl-3">
                     <div class="mb-1 text-[10px] font-mono text-[#7f1d1d] uppercase tracking-widest">
-                        Battle Damage Assessment // 战损报告
+                        战损报告
                     </div>
                     <div [innerHTML]="getCasualtyReport(u)"></div>
                 </div>
@@ -176,15 +191,16 @@ import { Unit } from '../types';
 
             <!-- === 4. TACTICAL TARGETING MODULE (Fixed Bottom, Scrollable Content) === -->
             @if (u.owner === game.currentPlayer() && !game.isUiLocked()) {
-                <div class="relative z-20 shrink-0 bg-[#1c1917] border-t-4 border-[#444] shadow-[0_-5px_15px_rgba(0,0,0,0.5)] flex flex-col max-h-[220px]">
+                <div class="relative z-20 shrink-0 bg-[#1c1917] border-t-4 border-[#444] shadow-[0_-5px_15px_rgba(0,0,0,0.5)] flex flex-col max-h-[220px]"
+                     [class.tutorial-spotlight]="game.tutorialState().currentStep?.highlightUi === 'attack-btn'">
                     <!-- Header -->
                     <div class="px-4 py-2 bg-[#292524] border-b border-[#444] flex justify-between items-center shrink-0">
                         <div class="flex items-center gap-2">
                             <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-                            <span class="text-[10px] font-mono text-[#d6d3d1] uppercase tracking-widest">Fire Control // 射击指挥</span>
+                            <span class="text-[10px] font-mono text-[#d6d3d1] uppercase tracking-widest">射击指挥</span>
                         </div>
                         <span class="text-[10px] font-mono" [class.text-green-500]="u.ap>=5" [class.text-red-500]="u.ap<5">
-                            {{u.ap >= 5 ? 'READY TO FIRE' : 'LOW AP (NEED 5)'}}
+                            {{u.ap >= 5 ? '可以开火' : 'AP不足 (需5点)'}}
                         </span>
                     </div>
 
@@ -193,7 +209,8 @@ import { Unit } from '../types';
                         @if (game.attackableUnits().length > 0) {
                             @for (target of sortedTargets(); track target.id) {
                                 <button (click)="fire(u, target)" 
-                                        class="w-full flex items-center justify-between p-2 border-l-2 transition-all duration-200 group bg-[#0c0a09] hover:bg-[#292524] border-[#444] hover:border-[#b91c1c]">
+                                        class="w-full flex items-center justify-between p-2 border-l-2 transition-all duration-200 group bg-[#0c0a09] hover:bg-[#292524] border-[#444] hover:border-[#b91c1c]"
+                                        [class.tutorial-spotlight]="game.tutorialState().currentStep?.requiredTargetId === target.id">
                                     
                                     <!-- Target Info -->
                                     <div class="flex flex-col items-start text-left flex-1 min-w-0 pr-2">
@@ -202,9 +219,9 @@ import { Unit } from '../types';
                                             <div class="flex items-center gap-2 min-w-0">
                                                 <!-- Hostility Icon & Label -->
                                                 @if (target.owner !== u.owner) {
-                                                    <span class="text-[#ef4444] text-[10px] font-mono tracking-tighter shrink-0">[ENEMY]</span>
+                                                    <span class="text-[#ef4444] text-[10px] font-mono tracking-tighter shrink-0">[敌]</span>
                                                 } @else {
-                                                    <span class="text-[#57534e] text-[10px] font-mono tracking-tighter opacity-50 shrink-0">[ALLY]</span>
+                                                    <span class="text-[#57534e] text-[10px] font-mono tracking-tighter opacity-50 shrink-0">[友]</span>
                                                 }
                                                 
                                                 <span class="text-xs font-bold transition-colors truncate"
@@ -228,23 +245,23 @@ import { Unit } from '../types';
                                         </div>
 
                                         <div class="text-[9px] font-mono text-[#78716c] flex justify-between w-full mt-1.5">
-                                            <span>RNG: {{game.getDistance(u, target)}}</span>
-                                            <span>ARM: <span class="text-blue-400">{{target.armor}}</span></span>
-                                            <span [class]="getOddsColor(u, target)">ODDS: {{ calculateOddsDisplay(u, target) }}</span>
+                                            <span>距离: {{game.getDistance(u, target)}}</span>
+                                            <span>装甲: <span class="text-blue-400">{{target.armor}}</span></span>
+                                            <span [class]="getOddsColor(u, target)">战损比: {{ calculateOddsDisplay(u, target) }}</span>
                                         </div>
                                     </div>
                                     
                                     <!-- Action Icon -->
                                     <div class="text-[#444] group-hover:text-[#ef4444] transition-colors pl-2 border-l border-[#333]">
-                                        <div class="text-[10px] font-black uppercase -rotate-90">FIRE</div>
+                                        <div class="text-[10px] font-black uppercase -rotate-90">开火</div>
                                     </div>
                                 </button>
                             }
                         } @else {
                             <div class="py-6 text-center text-[#57534e]">
                                 <div class="text-2xl mb-1 opacity-50">🔭</div>
-                                <div class="text-[10px] font-mono uppercase tracking-widest">No Valid Targets</div>
-                                <div class="text-[9px] opacity-60 mt-1">Check Range or AP</div>
+                                <div class="text-[10px] font-mono uppercase tracking-widest">无有效目标</div>
+                                <div class="text-[9px] opacity-60 mt-1">检查射程或AP</div>
                             </div>
                         }
                     </div>
@@ -382,5 +399,9 @@ export class InfoPanelComponent {
 
   fire(a: Unit, d: Unit) { 
       this.game.performAttack(a, d); 
+  }
+
+  getRegionId(u: Unit): string {
+      return this.game.hexMap().get(`${u.q},${u.r}`)?.region || 'Unknown';
   }
 }

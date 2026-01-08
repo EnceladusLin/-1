@@ -1,5 +1,5 @@
 
-export type TerrainType = 'DeepOcean' | 'Coastal' | 'Plains' | 'Mountains' | 'Urban' | 'Marsh';
+export type TerrainType = 'DeepOcean' | 'Coastal' | 'Plains' | 'Mountains' | 'Urban' | 'Marsh' | 'Road';
 export type UnitCategory = 'Naval' | 'Air' | 'Ground' | 'Amphibious' | 'Civilian';
 export type ArmorType = 'Soft' | 'Hard' | 'Air' | 'Naval';
 export type PlayerId = 'Red' | 'Blue' | 'Neutral';
@@ -22,7 +22,9 @@ export type RegionId =
   | 'West_Luodian'      // Blood mill
   | 'South_Jinshan'     // Landing zone
   | 'Yangtze_Estuary'   // Deep water
-  | 'Railway_Zone';     // North Station Line
+  | 'Railway_Zone'      // North Station Line
+  | 'Rear_Dachang'      // New: Second Line
+  | 'Rear_Nanxiang';    // New: Deep Rear
 
 // NEW: Player Skills (Command Cards)
 export interface PlayerSkill {
@@ -75,6 +77,9 @@ export interface GameSaveState {
   activeDoctrines: string[];
   skillCooldowns: [string, number][];
   skillUses: [string, number][];
+  
+  // NEW: Persist Region Control
+  regionOwnership: [string, PlayerId][]; 
 }
 
 // --- NEW ACHIEVEMENT TYPES ---
@@ -98,9 +103,7 @@ export interface AchievementStats {
     unlocked: number;
     desc: string;
     color: string;
-    bgClass: string;
-    borderClass: string;
-    textClass: string;
+    displayName: string;
     globalRate?: string;
 }
 
@@ -198,8 +201,9 @@ export interface HexCell {
   
   // Dynamic Terrain States
   isFortified?: boolean; // Def +4
-  isBlocked?: boolean;   // Impassable (Sunken ships)
+  isBlocked?: boolean;   // Impassable (Sunken ships) or Ruined Road
   isScorched?: boolean;  // No supply
+  isBridged?: boolean;   // Pontoon bridge constructed
 }
 
 export interface MapData {
@@ -254,7 +258,7 @@ export interface CombatResult {
 }
 
 // VFX Events
-export type GameEventType = 'MOVE' | 'ATTACK' | 'EXPLOSION' | 'SCAN_PING' | 'RICOCHET' | 'DESTRUCTION' | 'REINFORCEMENT' | 'ATROCITY' | 'ENCOUNTER' | 'REGION_UNLOCK' | 'MORALE_BREAK' | 'WEATHER_CHANGE' | 'SUPPLY_CHECK' | 'SMOKE';
+export type GameEventType = 'MOVE' | 'ATTACK' | 'EXPLOSION' | 'SCAN_PING' | 'RICOCHET' | 'DESTRUCTION' | 'REINFORCEMENT' | 'ATROCITY' | 'ENCOUNTER' | 'REGION_UNLOCK' | 'MORALE_BREAK' | 'WEATHER_CHANGE' | 'SUPPLY_CHECK' | 'SMOKE' | 'SPAWN' | 'CONSTRUCTION' | 'TORPEDO' | 'BUFF' | 'TEXT';
 
 export interface GameEvent {
   type: GameEventType;
@@ -265,6 +269,7 @@ export interface GameEvent {
   intensity?: number; // 0.0 - 1.0 for shake magnitude
   message?: string; // For combat logs
   unitCategory?: UnitCategory; // For differentiated VFX
+  owner?: PlayerId;
 }
 
 export interface SpawnConfig {
@@ -364,23 +369,25 @@ export interface Scenario {
 }
 
 export type TutorialStepKey = 
-  | 'WELCOME' | 'CAMERA_PAN' | 'CAMERA_ZOOM' | 'SELECT_UNIT' | 'INFO_PANEL'
-  | 'MOVE' | 'ZOC_INTRO' | 'ATTACK' | 'COMBAT_MECHANICS'
-  | 'SKILL_INTRO' | 'SKILL_AI' | 'SKILL_BUFF' | 'SKILL_AIR' | 'SKILL_SIHANG' | 'SKILL_REINFORCE'
-  | 'FINAL_BATTLE' | 'END_TURN' | 'CONCLUSION';
+  | 'WELCOME' | 'CAMERA' | 'SELECT_UNIT' | 'UI_INFO'
+  | 'MOVE' | 'ZOC' | 'ATTACK_INF'
+  | 'SELECT_ARTY' | 'EXPLAIN_ARMOR' | 'ATTACK_TANK'
+  | 'UI_SKILLS' | 'USE_BUFF' | 'USE_TACTICAL'
+  | 'END_TURN' | 'FREE_COMBAT' | 'CONCLUSION';
 
 export interface TutorialStep {
   key: TutorialStepKey;
   title: string;
   text: string;
   highlightHex?: {q: number, r: number};
-  highlightUi?: 'info-panel' | 'attack-btn' | 'end-turn-btn' | 'unit-stats' | 'map' | 'player-unit' | 'enemy-unit' | 'command-deck';
+  highlightUi?: 'info-panel' | 'attack-btn' | 'end-turn-btn' | 'unit-stats' | 'map' | 'player-unit' | 'enemy-unit' | 'command-deck' | 'buff-btn';
   panTo?: {q: number, r: number};
   zoomTo?: number;
-  waitForAction: 'ANY_KEY' | 'SELECT' | 'MOVE' | 'ATTACK' | 'END_TURN' | 'PAN' | 'ZOOM' | 'SKILL';
+  waitForAction: 'ANY_KEY' | 'SELECT' | 'MOVE' | 'ATTACK' | 'END_TURN' | 'PAN' | 'ZOOM' | 'SKILL' | 'SKILL_TARGET' | 'VICTORY_CONDITION';
   actionButtonText?: string;
   allowedHex?: {q: number, r: number}; 
   restrictInteraction?: boolean; 
+  requiredTargetId?: string; // If attacking, must target this
 }
 
 export interface TutorialState {

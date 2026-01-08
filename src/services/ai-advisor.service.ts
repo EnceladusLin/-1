@@ -1,4 +1,3 @@
-
 import { Injectable, signal, inject } from '@angular/core';
 import { GoogleGenAI } from '@google/genai';
 import { Unit, HexCell, PlayerId } from '../types';

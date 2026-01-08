@@ -61,14 +61,19 @@ export function resolveCombat(
     const isHardTarget = defender.armor > 0;
     const baseAttackValue = isHardTarget ? attacker.hardAttack : attacker.softAttack;
     
-    const attRatio = attacker.steps / (attacker.maxSteps || 4);
-    const defRatio = defender.steps / (defender.maxSteps || 4);
+    // NEW FORMULA: Efficiency = 0.6 + 0.4 * (HP%)
+    // Units retain at least 60% effectiveness as long as they are alive.
+    const getEfficiency = (u: Unit) => 0.6 + 0.4 * (u.hp / u.maxHp);
+
+    const attEff = getEfficiency(attacker);
+    const defEff = getEfficiency(defender);
     
-    let attStr = baseAttackValue * attRatio;
-    let defStr = defender.combatStrength * defRatio; // Defense always uses generic Combat Strength (Defense Value)
+    let attStr = baseAttackValue * attEff;
+    let defStr = defender.combatStrength * defEff; // Defense always uses generic Combat Strength (Defense Value)
 
     log.push(`目标类型: ${isHardTarget ? '硬目标 (装甲)' : '软目标 (步兵/轻型)'}`);
     log.push(`基础战力: 攻${attStr.toFixed(1)} / 防${defStr.toFixed(1)}`);
+    log.push(`效能衰减: 攻${(attEff*100).toFixed(0)}% / 防${(defEff*100).toFixed(0)}%`);
 
     // --- STEP 2: APPLY MULTIPLIERS (Terrain, Supply, Morale, Buffs) ---
     
@@ -128,10 +133,20 @@ export function resolveCombat(
     
     // --- STEP 2.5: SPECIAL COMBAT CONTEXT MODIFIERS ---
     if (ctx.isCoastalAssault) {
+        // Only apply penalty if the attacker is NOT on Coastal terrain
+        // This implies they are attacking FROM water or non-prepared position into defense
+        // But if Land attacks Sea, and ctx says coastal assault (set by game service logic), check direction
+        
+        // If Attacker is Ground and Defender is Naval, and Attacker is on Coast (logic handled in service to NOT set flag, or check here)
+        // Actually, let's trust the flag, but assume GameService sets it only when penalty applies.
+        // However, standard logic is:
         const roll = Math.random();
         const modifier = roll < 0.3 ? 0.45 : 0.30;
         attStr *= modifier;
-        log.push(`陆对舰攻击惩罚 (x${modifier.toFixed(2)})`);
+        log.push(`登陆/攻击水面惩罚 (x${modifier.toFixed(2)})`);
+    } else if (attacker.category === 'Ground' && defender.category === 'Naval') {
+        // Coastal Defense Logic: No penalty, but log it
+        log.push(`岸防阵地射击 (标准伤害)`);
     }
 
     // --- STEP 3: ADDITIVE BONUSES (Skills/Buffs) ---

@@ -12,7 +12,7 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
-  type: 'DUST' | 'EXPLOSION' | 'SPARK' | 'PING' | 'DESTRUCTION' | 'SMOKE' | 'TEXT' | 'TRACER' | 'MUZZLE_FLASH' | 'SHOCKWAVE' | 'GRAVE' | 'BLOOD';
+  type: 'DUST' | 'EXPLOSION' | 'SPARK' | 'PING' | 'DESTRUCTION' | 'SMOKE' | 'TEXT' | 'TRACER' | 'MUZZLE_FLASH' | 'SHOCKWAVE' | 'GRAVE' | 'BLOOD' | 'SPAWN' | 'CONSTRUCTION' | 'TORPEDO' | 'BUFF' | 'GAS' | 'BUFF_PURPLE';
   life: number;
   maxLife: number;
   color: string;
@@ -26,7 +26,6 @@ interface Particle {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <!-- Container -->
     <div #container class="w-full h-full relative overflow-hidden bg-[#222222]"
          (wheel)="onWheel($event)"
          (mousedown)="startDrag($event)"
@@ -34,19 +33,13 @@ interface Particle {
          (mouseup)="endDrag()"
          (mouseleave)="endDrag()">
       
-      <!-- Texture Overlay (Grain & Dust) - Premium Matte Finish -->
       <div class="absolute inset-0 z-[5] pointer-events-none opacity-[0.15] mix-blend-overlay bg-noise"></div>
-      
-      <!-- Vignette (Cinematic Darkening) -->
       <div class="absolute inset-0 z-[6] pointer-events-none bg-[radial-gradient(circle_at_center,rgba(0,0,0,0)_50%,rgba(10,10,12,0.6)_100%)]"></div>
 
-      <!-- Event Popup -->
       @if (game.activeEvent(); as evt) {
         <div class="absolute inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto animate-fade-in-fast">
           <div class="relative w-[640px] bg-[#eaddcf] border-[1px] border-[#5d4037] shadow-2xl p-2 font-serif text-[#2f1b14]">
-            <!-- Paper Texture -->
             <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/old-paper.png')] opacity-60 mix-blend-multiply pointer-events-none z-0"></div>
-            
             <div class="relative z-10 p-8">
               <header class="mb-6 border-b-2 border-[#2f1b14] pb-4">
                 <div class="flex justify-between items-center text-xs font-mono text-[#5d4037] uppercase tracking-widest mb-2">
@@ -98,7 +91,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
   private sub!: Subscription;
   private resizeObserver: ResizeObserver | null = null;
 
-  // Render State
   private hexSize = 18; 
   private scale = 1.2; 
   private panX = 0;
@@ -179,8 +171,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private createPatterns() {
     const tempCtx = document.createElement('canvas').getContext('2d')!;
-    
-    // 1. JAPANESE WARNING
     const c1 = document.createElement('canvas'); c1.width = 16; c1.height = 16;
     const x1 = c1.getContext('2d')!;
     x1.strokeStyle = 'rgba(255, 255, 255, 0.2)'; x1.lineWidth = 2;
@@ -188,7 +178,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     const p1 = tempCtx.createPattern(c1, 'repeat');
     if (p1) this.patternCache.set('JAPANESE', p1);
 
-    // 4. URBAN GRID
     const c4 = document.createElement('canvas'); c4.width = 24; c4.height = 24;
     const x4 = c4.getContext('2d')!;
     x4.strokeStyle = 'rgba(0,0,0,0.1)'; x4.lineWidth = 1;
@@ -196,7 +185,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     const p4 = tempCtx.createPattern(c4, 'repeat');
     if (p4) this.patternCache.set('URBAN_GRID', p4);
 
-    // 5. CONTOUR LINES
     const c5 = document.createElement('canvas'); c5.width = 64; c5.height = 64;
     const x5 = c5.getContext('2d')!;
     x5.strokeStyle = 'rgba(0,0,0,0.08)'; x5.lineWidth = 1;
@@ -207,25 +195,21 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     if (p5) this.patternCache.set('CONTOUR', p5);
   }
 
-  // --- PREMIUM FEATURE: Realistic Railway Rendering ---
   private _drawRailwayDetail(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, isVertical: boolean) {
     ctx.save();
     ctx.translate(x, y);
     if (!isVertical) ctx.rotate(Math.PI / 2);
     
-    // Geometry
     const sleeperWidth = size * 1.2;
     const sleeperHeight = size * 0.2;
     const trackWidth = size * 0.15;
     const trackSpacing = size * 0.6;
 
-    // 1. Sleepers (Pure Black for contrast on dark ground)
     ctx.fillStyle = '#000000'; 
     ctx.fillRect(-sleeperWidth/2, -size*0.7, sleeperWidth, sleeperHeight);
     ctx.fillRect(-sleeperWidth/2, -sleeperHeight/2, sleeperWidth, sleeperHeight);
     ctx.fillRect(-sleeperWidth/2, size*0.7 - sleeperHeight, sleeperWidth, sleeperHeight);
 
-    // 2. Rails (Steel Grey)
     ctx.fillStyle = '#555555'; 
     ctx.fillRect(-trackSpacing/2 - trackWidth/2, -size, trackWidth, size*2);
     ctx.fillRect(trackSpacing/2 - trackWidth/2, -size, trackWidth, size*2);
@@ -250,7 +234,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
           let color = REGION_COLORS[variant] || REGION_COLORS['RURAL'];
           if (variant === 'FOG') color = '#0a0a0a';
 
-          // Base Path
           sCtx.beginPath();
           for (let i = 0; i < 6; i++) {
             const angle = Math.PI / 180 * (60 * i);
@@ -259,17 +242,10 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
             if(i===0) sCtx.moveTo(px, py); else sCtx.lineTo(px, py);
           }
           sCtx.closePath();
-
-          if (variant === 'WATER') {
-              // Deep water base
-              sCtx.fillStyle = color;
-          } else {
-              sCtx.fillStyle = color;
-          }
+          sCtx.fillStyle = color;
           sCtx.fill();
 
           if (variant !== 'FOG') {
-             // Patterns
              if (variant === 'JAPANESE' && this.patternCache.has('JAPANESE')) {
                  sCtx.fillStyle = this.patternCache.get('JAPANESE')!; sCtx.fill();
              } else if (variant === 'RURAL' && this.patternCache.has('CONTOUR')) {
@@ -308,7 +284,17 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
                 sCtx.translate(-cx, -cy);
              }
 
-             // Highlights and Shadows for 3D effect
+             if (variant === 'ROAD') {
+                 // Simplified road rendering: Light gray path
+                 // Note: Real connected roads would require neighbor awareness in sprite generation which is complex here.
+                 // We rely on the base fill being REGION_COLORS['ROAD'] which is defined.
+                 // Add simple gravel texture
+                 sCtx.fillStyle = 'rgba(255,255,255,0.1)';
+                 for(let i=0; i<10; i++) {
+                     sCtx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+                 }
+             }
+
              sCtx.beginPath();
              for (let i = 3; i <= 6; i++) {
                 const angle = Math.PI / 180 * (60 * i);
@@ -355,18 +341,13 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
         p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-        if (p.type === 'SMOKE') { p.radius *= 1.02; p.vx *= 0.95; p.vy *= 0.95; }
+        if (p.type === 'SMOKE' || p.type === 'SPAWN' || p.type === 'GAS') { p.radius *= 1.02; p.vx *= 0.95; p.vy *= 0.95; }
         if (p.type === 'SHOCKWAVE') { p.radius += 2; p.life -= 0.05; }
         if (p.type === 'MUZZLE_FLASH') p.life -= 0.1;
-        
-        if (p.type === 'GRAVE') { 
-            p.y -= 0.2; 
-            p.life -= 0.01; 
-            p.radius *= 0.99; 
-        }
-        if (p.type === 'BLOOD') {
-             p.vy += 0.1; 
-        }
+        if (p.type === 'GRAVE') { p.y -= 0.2; p.life -= 0.01; p.radius *= 0.99; }
+        if (p.type === 'BLOOD') { p.vy += 0.1; }
+        if (p.type === 'TORPEDO') { p.vx *= 1.05; p.vy *= 1.05; p.life -= 0.03; }
+        if (p.type === 'BUFF' || p.type === 'BUFF_PURPLE') { p.y -= 1; p.life -= 0.02; }
         if (p.life <= 0) this.particles.splice(i, 1);
     }
   }
@@ -375,7 +356,7 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.ctx || !this.canvasRef) return;
     const width = this.canvasRef.nativeElement.width / (window.devicePixelRatio || 1);
     const height = this.canvasRef.nativeElement.height / (window.devicePixelRatio || 1);
-    this.ctx.fillStyle = REGION_COLORS['BG']; // Use Premium Dark Background
+    this.ctx.fillStyle = REGION_COLORS['BG']; 
     this.ctx.fillRect(0, 0, width, height);
 
     this.ctx.save();
@@ -393,13 +374,12 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
     const map = this.game.hexMap();
     const unlocked = this.game.unlockedRegions();
     const reachable = this.game.reachableHexes();
-    const zocHexes = this.game.zocHexes();
     const selectedUnit = this.game.selectedUnit();
     const selectedId = this.game.selectedUnitId();
     const tutorialStep = this.game.tutorialState().currentStep;
+    const isTutorialActive = this.game.tutorialState().active;
     
-    const pulseZoc = (Math.sin(Date.now() / 300) + 1) * 0.5;
-    const pulseTutorial = (Math.sin(Date.now() / 200) + 1) * 0.5;
+    // --- 1. DRAW BASE MAP ---
     const spriteOffsetX = -(Math.sqrt(3) * hexRadius + 2) / 2;
     const spriteOffsetY = -(hexRadius * 2 + 2) / 2;
 
@@ -408,52 +388,27 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
         const cy = hexRadius * (Math.sqrt(3)/2 * cell.q + Math.sqrt(3) * cell.r);
         if (cx < tlX - hexWidth || cx > brX + hexWidth || cy < tlY - hexHeight || cy > brY + hexHeight) continue;
 
-        const isVisible = unlocked.has(cell.region) || this.game.tutorialState().active;
+        const isVisible = unlocked.has(cell.region) || isTutorialActive;
         if (isVisible) {
             let variant = cell.visualVariant || 'RURAL';
             const sprite = this.hexSprites.get(variant) || this.hexSprites.get('RURAL');
             if (sprite) this.ctx.drawImage(sprite, Math.floor(cx + spriteOffsetX), Math.floor(cy + spriteOffsetY));
             
-            // PREMIUM: Dynamic Water Waves
             if (variant === 'WATER') {
                 this.drawWaterDetail(cx, cy, hexRadius, this.time);
             }
 
+            // Terrain Details
+            if (cell.isBridged) this.drawBridge(cx, cy);
+            if (cell.isBlocked && cell.isRiver) this.drawBlockade(cx, cy);
+            if (cell.isScorched) this.drawScorched(cx, cy, hexRadius);
+            if (cell.isFortified) this.drawFortification(cx, cy, hexRadius);
+
+            // Move Indicators
             if (reachable.has(`${cell.q},${cell.r}`)) {
-                const isTutorialMove = tutorialStep?.key === 'MOVE';
-                if (isTutorialMove) {
-                    const movePulse = (Math.sin(Date.now() / 250) + 1) * 0.5;
-                    this.ctx.save();
-                    this.ctx.fillStyle = `rgba(255, 235, 59, ${0.4 + movePulse * 0.4})`; 
-                    this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius - 1); this.ctx.fill();
-                    this.ctx.strokeStyle = '#ffff00'; this.ctx.lineWidth = 3 + movePulse * 2; this.ctx.shadowBlur = 15; this.ctx.shadowColor = '#ffff00'; this.ctx.stroke();
-                    this.ctx.beginPath(); this.ctx.moveTo(cx - 5, cy); this.ctx.lineTo(cx + 5, cy); this.ctx.moveTo(cx, cy - 5); this.ctx.lineTo(cx, cy + 5); this.ctx.lineWidth = 2; this.ctx.stroke();
-                    this.ctx.restore();
-                } else {
-                    this.ctx.fillStyle = 'rgba(217, 119, 6, 0.3)';
-                    this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius - 2); this.ctx.fill();
-                    this.ctx.strokeStyle = '#d97706'; this.ctx.lineWidth = 1; this.ctx.stroke();
-                }
-            }
-            if (zocHexes.has(`${cell.q},${cell.r}`)) {
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeStyle = `rgba(220, 38, 38, ${0.4 + 0.6 * pulseZoc})`;
-                this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius - 1); this.ctx.stroke();
-            }
-            if (tutorialStep?.highlightHex?.q === cell.q && tutorialStep?.highlightHex?.r === cell.r) {
-                const pulseOpacity = 0.6 + pulseTutorial * 0.4; 
-                this.ctx.save();
-                this.ctx.fillStyle = `rgba(255, 215, 0, ${0.2 + pulseTutorial * 0.3})`;
-                this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius); this.ctx.fill();
-                const ringSize = hexRadius + (pulseTutorial * 8); 
-                this.ctx.strokeStyle = `rgba(255, 215, 0, ${1 - pulseTutorial})`; this.ctx.lineWidth = 2;
-                this.ctx.beginPath(); this.hexPath(cx, cy, ringSize); this.ctx.stroke();
-                this.ctx.strokeStyle = `rgba(255, 215, 0, ${pulseOpacity})`; this.ctx.lineWidth = 3; this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#FFD700';
-                this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius); this.ctx.stroke();
-                const arrowOffset = 25 + pulseTutorial * 5;
-                this.ctx.fillStyle = '#FFD700'; this.ctx.shadowBlur = 0;
-                this.ctx.beginPath(); this.ctx.moveTo(cx, cy - arrowOffset); this.ctx.lineTo(cx - 5, cy - arrowOffset - 10); this.ctx.lineTo(cx + 5, cy - arrowOffset - 10); this.ctx.fill();
-                this.ctx.restore();
+                this.ctx.fillStyle = 'rgba(217, 119, 6, 0.3)';
+                this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius - 2); this.ctx.fill();
+                this.ctx.strokeStyle = '#d97706'; this.ctx.lineWidth = 1; this.ctx.stroke();
             }
         } else {
             const sprite = this.hexSprites.get('FOG');
@@ -461,7 +416,7 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    if (!this.game.tutorialState().active) this.drawLabels(tlX, tlY, brX, brY);
+    if (!isTutorialActive) this.drawLabels(tlX, tlY, brX, brY);
 
     const units = this.game.units();
     for (const unit of units) {
@@ -469,11 +424,16 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
          const cx = hexRadius * (3/2 * unit.q);
          const cy = hexRadius * (Math.sqrt(3)/2 * unit.q + Math.sqrt(3) * unit.r);
          if (cx < tlX - 50 || cx > brX + 50 || cy < tlY - 50 || cy > brY + 50) continue;
+         
+         if (this.game.unitHasBuff(unit)) this.drawBuffAura(cx, cy, hexRadius, this.time);
+
          if (unit.id === selectedId) {
              this.ctx.save(); this.ctx.shadowColor = '#fbbf24'; this.ctx.shadowBlur = 15;
              this.ctx.beginPath(); this.ctx.arc(cx, cy, 12, 0, Math.PI*2); this.ctx.fillStyle = 'rgba(251, 191, 36, 0.3)'; this.ctx.fill(); this.ctx.restore();
          }
          this.drawUnit(this.ctx, unit, cx, cy);
+         
+         // Attack Range Indicator
          if (selectedId && selectedUnit && unit.id !== selectedId && unit.owner !== selectedUnit.owner) {
              const dist = (Math.abs(selectedUnit.q - unit.q) + Math.abs(selectedUnit.r - unit.r) + Math.abs((-selectedUnit.q-selectedUnit.r) - (-unit.q-unit.r))) / 2;
              if (dist <= selectedUnit.range && !selectedUnit.hasAttacked) {
@@ -481,8 +441,222 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
              }
          }
     }
+    
+    // --- 2. TUTORIAL SPOTLIGHT OVERLAY ---
+    // If tutorial is active and targeting map/unit, darken everything else and redraw target on top
+    if (isTutorialActive && tutorialStep?.highlightUi !== 'map' && tutorialStep?.highlightHex) {
+        // A. Draw full screen darkness (transformed to cover visible area)
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        this.ctx.fillRect(tlX - 100, tlY - 100, (brX - tlX) + 200, (brY - tlY) + 200);
+
+        // B. Redraw highlighted hex & unit brighter
+        const hq = tutorialStep.highlightHex.q;
+        const hr = tutorialStep.highlightHex.r;
+        const cx = hexRadius * (3/2 * hq);
+        const cy = hexRadius * (Math.sqrt(3)/2 * hq + Math.sqrt(3) * hr);
+        
+        // Redraw terrain cell
+        const cell = map.get(`${hq},${hr}`);
+        if (cell) {
+            let variant = cell.visualVariant || 'RURAL';
+            const sprite = this.hexSprites.get(variant) || this.hexSprites.get('RURAL');
+            if (sprite) {
+                // Glow behind
+                this.ctx.save();
+                this.ctx.shadowColor = '#fbbf24'; this.ctx.shadowBlur = 30;
+                this.ctx.drawImage(sprite, Math.floor(cx + spriteOffsetX), Math.floor(cy + spriteOffsetY));
+                this.ctx.restore();
+            }
+            
+            // Redraw Unit if any
+            const unit = this.game.getUnitAt(hq, hr);
+            if (unit) {
+                this.drawUnit(this.ctx, unit, cx, cy);
+            }
+
+            // Spotlight Border Animation
+            const pulse = (Math.sin(this.time * 4) + 1) * 0.5; // Fast breathe
+            this.ctx.strokeStyle = `rgba(251, 191, 36, ${0.5 + pulse * 0.5})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath(); this.hexPath(cx, cy, hexRadius + 2 + pulse * 2); this.ctx.stroke();
+        }
+    } else if (isTutorialActive && tutorialStep?.highlightUi !== 'map') {
+        // If tutorial is active but NOT highlighting map specifically (highlighting UI instead)
+        // Darken the whole map slightly to focus on UI
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        this.ctx.fillRect(tlX - 100, tlY - 100, (brX - tlX) + 200, (brY - tlY) + 200);
+    }
+
     this.drawVFX();
-    this.ctx.restore();
+    this.ctx.restore(); // Restore context from pan/zoom
+
+    // --- OFF-SCREEN INDICATOR (NEW) ---
+    if (isTutorialActive && tutorialStep?.highlightHex) {
+        const hq = tutorialStep.highlightHex.q;
+        const hr = tutorialStep.highlightHex.r;
+        const hexPixel = this.hexToPixel(hq, hr);
+        const screenX = hexPixel.x * this.scale + this.panX;
+        const screenY = hexPixel.y * this.scale + this.panY;
+        
+        const margin = 50;
+        if (screenX < -margin || screenX > width + margin || screenY < -margin || screenY > height + margin) {
+            // Target is off-screen
+            const cx = width / 2;
+            const cy = height / 2;
+            const dx = screenX - cx;
+            const dy = screenY - cy;
+            const angle = Math.atan2(dy, dx);
+            
+            // Calculate arrow position on edge of screen (with some padding)
+            const pad = 40;
+            let ax = cx;
+            let ay = cy;
+            
+            // Simple clamping logic for 4 edges
+            const slope = dy / dx;
+            
+            // Check vertical edges
+            if (dx > 0) { // Right
+                ax = width - pad; ay = cy + (width/2 - pad) * slope;
+            } else { // Left
+                ax = pad; ay = cy - (width/2 - pad) * slope;
+            }
+            
+            // If y is out of bounds, check horizontal edges
+            if (ay < pad || ay > height - pad) {
+                if (dy > 0) { // Bottom
+                    ay = height - pad; ax = cx + (height/2 - pad) / slope;
+                } else { // Top
+                    ay = pad; ax = cx - (height/2 - pad) / slope;
+                }
+            }
+            
+            // Draw Arrow
+            this.ctx.save();
+            this.ctx.translate(ax, ay);
+            this.ctx.rotate(angle);
+            const pulse = (Math.sin(this.time * 5) + 1) * 0.5;
+            this.ctx.fillStyle = `rgba(251, 191, 36, ${0.7 + pulse * 0.3})`; // Amber
+            this.ctx.shadowColor = '#fbbf24';
+            this.ctx.shadowBlur = 10;
+            this.ctx.beginPath();
+            this.ctx.moveTo(10 + pulse * 5, 0);
+            this.ctx.lineTo(-10, 10);
+            this.ctx.lineTo(-10, -10);
+            this.ctx.fill();
+            this.ctx.restore();
+        }
+    }
+
+    this.drawWeather(width, height);
+  }
+
+  // --- Helper Draw Methods extracted for clarity ---
+  private drawBridge(cx: number, cy: number) {
+      this.ctx.save(); this.ctx.translate(cx, cy);
+      this.ctx.fillStyle = '#5d4037'; this.ctx.strokeStyle = '#3e2723'; this.ctx.lineWidth = 1;
+      this.ctx.fillRect(-10, -4, 20, 3); this.ctx.strokeRect(-10, -4, 20, 3);
+      this.ctx.fillRect(-10, 1, 20, 3); this.ctx.strokeRect(-10, 1, 20, 3);
+      this.ctx.fillStyle = '#263238';
+      this.ctx.beginPath(); this.ctx.arc(-8, 0, 3, 0, Math.PI*2); this.ctx.fill();
+      this.ctx.beginPath(); this.ctx.arc(8, 0, 3, 0, Math.PI*2); this.ctx.fill();
+      this.ctx.restore();
+  }
+
+  private drawBlockade(cx: number, cy: number) {
+      this.ctx.save(); this.ctx.translate(cx, cy);
+      this.ctx.rotate(Math.PI / 4);
+      this.ctx.fillStyle = '#1c1917';
+      this.ctx.beginPath(); this.ctx.moveTo(-8, 0); this.ctx.lineTo(8, 0); this.ctx.lineTo(6, 4); this.ctx.lineTo(-6, 4); this.ctx.fill();
+      this.ctx.strokeStyle = '#1c1917'; this.ctx.lineWidth = 2;
+      this.ctx.beginPath(); this.ctx.moveTo(0, 0); this.ctx.lineTo(2, -8); this.ctx.stroke();
+      this.ctx.strokeStyle = '#ef4444'; this.ctx.lineWidth = 2;
+      this.ctx.beginPath(); this.ctx.moveTo(-5, -5); this.ctx.lineTo(5, 5); this.ctx.moveTo(5, -5); this.ctx.lineTo(-5, 5); this.ctx.stroke();
+      this.ctx.restore();
+  }
+
+  private drawScorched(cx: number, cy: number, hexRadius: number) {
+      this.ctx.save(); this.ctx.translate(cx, cy);
+      this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      this.ctx.beginPath(); this.ctx.arc(0, 0, hexRadius * 0.7, 0, Math.PI*2); this.ctx.fill();
+      this.ctx.strokeStyle = '#dc2626'; this.ctx.lineWidth = 1;
+      this.ctx.beginPath(); this.ctx.moveTo(-5, -5); this.ctx.lineTo(0, 0); this.ctx.lineTo(3, -4); this.ctx.lineTo(5, 5); this.ctx.stroke();
+      this.ctx.fillStyle = `rgba(245, 158, 11, ${0.5 + Math.sin(this.time*5)*0.5})`;
+      this.ctx.beginPath(); this.ctx.arc(2, 2, 2, 0, Math.PI*2); this.ctx.fill();
+      this.ctx.restore();
+  }
+
+  private drawFortification(cx: number, cy: number, hexRadius: number) {
+      this.ctx.save(); this.ctx.translate(cx, cy);
+      this.ctx.strokeStyle = '#57534e'; this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, hexRadius * 0.6, 0, Math.PI, true); 
+      this.ctx.stroke();
+      this.ctx.strokeStyle = '#d6d3d1'; this.ctx.lineWidth = 1;
+      this.ctx.setLineDash([2, 2]);
+      this.ctx.stroke(); 
+      this.ctx.restore();
+  }
+
+  private drawBuffAura(cx: number, cy: number, r: number, time: number) {
+      this.ctx.save();
+      this.ctx.translate(cx, cy);
+      this.ctx.rotate(time); // Rotate
+      this.ctx.beginPath();
+      // Hex shape ring
+      for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 180 * (60 * i);
+          const px = (r + 4) * Math.cos(angle);
+          const py = (r + 4) * Math.sin(angle);
+          if (i === 0) this.ctx.moveTo(px, py); else this.ctx.lineTo(px, py);
+      }
+      this.ctx.closePath();
+      // Purple Aura
+      this.ctx.strokeStyle = `rgba(168, 85, 247, ${0.6 + Math.sin(time*3)*0.2})`; // Purple
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowColor = '#a855f7';
+      this.ctx.shadowBlur = 10;
+      this.ctx.stroke();
+      this.ctx.restore();
+  }
+
+  private drawWeather(w: number, h: number) {
+      const weather = this.game.weather();
+      if (weather === 'Sunny') return;
+
+      this.ctx.save();
+      if (weather === 'Typhoon') {
+          this.ctx.fillStyle = 'rgba(0, 10, 20, 0.35)';
+          this.ctx.fillRect(0, 0, w, h);
+      }
+      const count = weather === 'Typhoon' ? 400 : 150;
+      const angle = weather === 'Typhoon' ? 0.5 : 0.2;
+      const speed = weather === 'Typhoon' ? 30 : 15;
+      const length = weather === 'Typhoon' ? 30 : 15;
+      const opacity = weather === 'Typhoon' ? 0.4 : 0.3;
+      this.ctx.strokeStyle = `rgba(174, 194, 224, ${opacity})`;
+      this.ctx.lineWidth = weather === 'Typhoon' ? 2 : 1;
+      this.ctx.beginPath();
+      const t = this.time * speed; 
+      for(let i = 0; i < count; i++) {
+          const offsetX = (i * 1327) % w;
+          const offsetY = (i * 911) % h;
+          let x = (offsetX - t * 5 * angle) % w;
+          let y = (offsetY + t) % h;
+          if (x < 0) x += w; if (y < 0) y += h;
+          this.ctx.moveTo(x, y);
+          this.ctx.lineTo(x - length * Math.sin(angle), y + length * Math.cos(angle));
+      }
+      this.ctx.stroke();
+      if (weather === 'Typhoon') {
+          this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
+          for(let i=0; i<5; i++) {
+              const cx = ((this.time * 2 + i * 200) % (w + 400)) - 200;
+              const cy = (i * 150) % h;
+              this.ctx.beginPath(); this.ctx.ellipse(cx, cy, 150, 80, 0, 0, Math.PI*2); this.ctx.fill();
+          }
+      }
+      this.ctx.restore();
   }
 
   private hexPath(cx: number, cy: number, r: number) {
@@ -496,13 +670,9 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
       this.ctx.closePath();
   }
 
-  // PREMIUM: Improved Water Animation
   private drawWaterDetail(cx: number, cy: number, r: number, time: number) {
-      if (this.scale < 0.8) return; // Optimization: Don't draw detailed water when zoomed out far
-      
+      if (this.scale < 0.8) return; 
       this.ctx.save(); this.ctx.beginPath(); this.hexPath(cx, cy, r); this.ctx.clip(); this.ctx.lineWidth = 1.5;
-      
-      // Wave 1
       this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
       this.ctx.beginPath();
       for(let i = -r; i < r; i += 6) {
@@ -510,8 +680,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
           if(i === -r) this.ctx.moveTo(x, y); else this.ctx.lineTo(x, y);
       }
       this.ctx.stroke();
-      
-      // Wave 2
       this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       this.ctx.beginPath();
       for(let i = -r; i < r; i += 5) {
@@ -531,7 +699,6 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
           if (overlay.rotate) this.ctx.rotate(overlay.rotate);
           const fontSize = overlay.size * this.scale;
           if (fontSize < 10 && !overlay.bg) continue;
-          // Font change: Consolidate to Noto Serif SC for consistency
           const fontName = overlay.font || "Noto Serif SC";
           const weight = overlay.weight || "bold";
           this.ctx.font = `${weight} ${fontSize}px "${fontName}", serif`;
@@ -546,14 +713,11 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
                this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)'; this.ctx.lineWidth = 1; this.ctx.stroke(); this.ctx.shadowBlur = 0;
           }
           this.ctx.fillStyle = overlay.color;
-          
-          // Outline for large text
           if (!overlay.bg && fontSize > 14) {
              this.ctx.strokeStyle = 'rgba(0,0,0,0.5)';
              this.ctx.lineWidth = 3;
              this.ctx.strokeText(overlay.text, 0, 0);
           }
-
           this.ctx.fillText(overlay.text, 0, 0);
           if (overlay.rotate) this.ctx.rotate(-overlay.rotate);
           this.ctx.translate(-pixel.x, -pixel.y);
@@ -565,21 +729,18 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
       for (const p of this.particles) {
         this.ctx.globalAlpha = p.life;
         if (p.type === 'GRAVE') {
-            // Replaced Skull with a simple, solemn Cross or Debris marker
             this.ctx.shadowColor = '#000'; this.ctx.shadowBlur = 2; 
             this.ctx.strokeStyle = `rgba(255,255,255,${p.life})`;
             this.ctx.lineWidth = 2;
-            const s = p.radius * 0.6; // Scale
+            const s = p.radius * 0.6; 
             this.ctx.beginPath();
-            // Draw Cross
             this.ctx.moveTo(p.x, p.y - s); this.ctx.lineTo(p.x, p.y + s);
             this.ctx.moveTo(p.x - s*0.6, p.y - s*0.3); this.ctx.lineTo(p.x + s*0.6, p.y - s*0.3);
             this.ctx.stroke();
             this.ctx.shadowBlur = 0;
         } else if (p.type === 'BLOOD') {
-            // Darker, drier blood
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); 
-            this.ctx.fillStyle = '#7f1d1d'; // Darker red (Dried blood)
+            this.ctx.fillStyle = '#7f1d1d'; 
             this.ctx.fill();
         } else if (p.type === 'TEXT') {
             this.ctx.fillStyle = '#ef4444'; this.ctx.font = 'bold 12px serif'; this.ctx.fillText(p.text || '', p.x, p.y);
@@ -589,6 +750,42 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); this.ctx.strokeStyle = `rgba(255,255,255,${p.life * 0.5})`; this.ctx.lineWidth = 4; this.ctx.stroke();
         } else if (p.type === 'MUZZLE_FLASH') {
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius * (0.8 + Math.random()*0.4), 0, Math.PI*2); this.ctx.fillStyle = '#fde047'; this.ctx.fill();
+        } else if (p.type === 'SPAWN') {
+            this.ctx.save();
+            const h = p.radius * 20; 
+            const w = p.radius * 2;
+            const alpha = Math.min(1, p.life * 2);
+            const baseColor = p.color === '#ef4444' ? '255, 50, 50' : '50, 150, 255'; 
+            const grd = this.ctx.createLinearGradient(p.x, p.y - h, p.x, p.y);
+            grd.addColorStop(0, 'rgba(255, 255, 255, 0)');
+            grd.addColorStop(0.5, `rgba(${baseColor}, ${alpha * 0.5})`);
+            grd.addColorStop(1, `rgba(${baseColor}, ${alpha})`);
+            this.ctx.fillStyle = grd;
+            this.ctx.fillRect(p.x - w/2, p.y - h, w, h);
+            this.ctx.strokeStyle = `rgba(${baseColor}, ${alpha})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath(); this.ctx.ellipse(p.x, p.y, w, w/2, 0, 0, Math.PI*2); this.ctx.stroke();
+            this.ctx.fillStyle = '#fff';
+            this.ctx.globalAlpha = p.life;
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y, w/3, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.restore();
+        } else if (p.type === 'CONSTRUCTION') {
+            this.ctx.fillStyle = '#a1887f'; 
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); this.ctx.fill();
+        } else if (p.type === 'TORPEDO') {
+            this.ctx.beginPath(); this.ctx.moveTo(p.x, p.y); this.ctx.lineTo(p.x - p.vx*3, p.y - p.vy*3);
+            this.ctx.strokeStyle = `rgba(255, 255, 255, ${p.life})`; this.ctx.lineWidth = 2; this.ctx.stroke();
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 2, 0, Math.PI*2); this.ctx.fillStyle = '#fff'; this.ctx.fill();
+        } else if (p.type === 'BUFF' || p.type === 'BUFF_PURPLE') {
+            const isPurple = p.type === 'BUFF_PURPLE';
+            const color = isPurple ? `rgba(168, 85, 247, ${p.life})` : `rgba(255, 215, 0, ${p.life})`;
+            this.ctx.save(); this.ctx.translate(p.x, p.y); this.ctx.scale(1, 0.5); 
+            this.ctx.beginPath(); this.ctx.arc(0, 0, p.radius, 0, Math.PI*2); this.ctx.strokeStyle = color; this.ctx.lineWidth = 2; this.ctx.stroke(); this.ctx.restore();
+            this.ctx.fillStyle = isPurple ? `linear-gradient(to top, rgba(168,85,247,0), rgba(168,85,247,${p.life * 0.5}))` : `linear-gradient(to top, rgba(255,215,0,0), rgba(255,215,0,${p.life * 0.5}))`;
+            this.ctx.fillRect(p.x - 1, p.y - p.radius, 2, p.radius);
+        } else if (p.type === 'GAS') {
+            this.ctx.fillStyle = `rgba(34, 197, 94, ${p.life * 0.3})`;
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); this.ctx.fill();
         } else {
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); this.ctx.fillStyle = p.color; this.ctx.fill();
         }
@@ -762,15 +959,37 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
         case 'MOVE': this.spawnDust(p.x, p.y); break;
         case 'DESTRUCTION': 
             this.spawnExplosion(p.x, p.y, 2.0); 
-            // Replaced SKULL with GRAVE, removed blood spray, made it debris/grave
             this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: 0, vy: 0, life: 4.0, maxLife: 4.0, type: 'GRAVE', color: '#fff', radius: 15 });
-            // Debris/Dust instead of bright blood
             for(let i=0; i<15; i++) { 
                 this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4 - 2, life: 2.0, maxLife: 2.0, type: 'BLOOD', color: '#5d4037', radius: 2 + Math.random() * 3 }); 
             } 
             break;
         case 'RICOCHET': this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 - 2, life: 1.0, maxLife: 1.0, type: 'SPARK', color: '#fbbf24', radius: 2 }); break;
         case 'SMOKE': this.spawnDust(p.x, p.y); break;
+        case 'SPAWN': {
+            if (evt.message === '毒气') {
+                for(let i=0; i<8; i++) {
+                    this.particles.push({ id: ++this.particleIdCounter, x: p.x + (Math.random()-0.5)*20, y: p.y + (Math.random()-0.5)*20, vx: (Math.random()-0.5), vy: -0.5, life: 3.0, maxLife: 3.0, type: 'GAS', color: '#22c55e', radius: 10 + Math.random()*10 });
+                }
+            } else {
+                const color = evt.owner === 'Red' ? '#ef4444' : '#60a5fa'; 
+                this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: 0, vy: 0, life: 1.0, maxLife: 1.0, type: 'SPARK', color, radius: 10 });
+                this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: 0, vy: -2, life: 1.5, maxLife: 1.5, type: 'SPAWN', color, radius: 15 });
+            }
+            break;
+        }
+        case 'CONSTRUCTION':
+            for(let i=0; i<5; i++) {
+                this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2 - 1, life: 1.5, maxLife: 1.5, type: 'CONSTRUCTION', color: '#a1887f', radius: 3 });
+            }
+            break;
+        case 'BUFF':
+            // Specific purple visual for buffs
+            this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: 0, vy: -0.5, life: 2.0, maxLife: 2.0, type: 'BUFF_PURPLE', color: '#a855f7', radius: 15 });
+            break;
+        case 'TORPEDO':
+            this.particles.push({ id: ++this.particleIdCounter, x: p.x, y: p.y, vx: 1, vy: 0, life: 2.0, maxLife: 2.0, type: 'TORPEDO', color: '#fff', radius: 3 });
+            break;
     }
   }
 
@@ -824,6 +1043,7 @@ export class HexGridComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   endDrag() {
+    if (!this.isMouseDown) return; 
     this.isMouseDown = false;
     if (!this.isDragging) {
         const rect = this.containerRef.nativeElement.getBoundingClientRect();
